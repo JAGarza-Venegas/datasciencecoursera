@@ -1,0 +1,382 @@
+---
+title: "R Notebook"
+author: "Jorge Garza-Venegas"
+date: "2022-07-07"
+output: html_notebook
+---
+
+# Programming with R
+
+Control structures in R. Reserved words:
+
+- **if, else**  
+- **for**  
+- **while**  
+- **repeat**  
+- **break**  
+- **next**  
+- **return**  
+
+Most control structures are not used in interactive sessiones, but rather when writing functions or longer expressions.
+
+## If/Else conditions
+
+Allows to test logic conditions and let R do something depending on whether or not the donidtion is true or false.
+
+```{r}
+x = 10
+if(x > 3){
+    print("x is greater than 3")
+} else {
+    print("x is no greater than 3")
+}
+```
+
+```{r}
+y <- if(x>3){
+    10
+    } else {
+    3
+    }
+y
+```
+
+## For
+
+**for** loops take an iterator variable and assign it successive values from a sequence or vector. They are usually used for iterating over the elements of a list or vector.
+
+```{r}
+x <- c("a","b","c","d")
+for(i in 1:4){
+    print(x[i])
+}
+
+for(i in seq_along(x)){
+    print(x[i])
+}
+
+for(letter in x) print(letter)
+```
+
+**For** can be nested. The most common example is for printing matrix elements
+
+```{r}
+x<-matrix(1:6, 2, 3)
+x
+
+for (i in seq_len(nrow(x))){
+    for (j in seq_len(ncol(x))){
+        print(x[i,j])
+    }
+}
+```
+
+## While loops.
+
+**While** loops begin by a testing condition. If the condition is true, the loop body is executed and the condition is tested again. This is repeated until the condition is not true (false).
+
+There is an example with more than one condition. Remember that you can use the logical operator $\&$ to indicate the `AND` operator.
+
+```{r}
+z <- 5
+
+while (z >= 3 & z <= 10){
+    print(z)
+    coin <- rbinom(1,1,0.5)
+    
+    if(coin == 1){
+        z <- z+1
+    } else {
+        z <- z-1
+    }
+}
+```
+
+Note: Conditions are evaluated from left to right.
+
+## Repeat, next and break.
+
+**Repeat** initiates an infinite loop which can only be exited using **break**
+
+```{r}
+x0 <- 1
+tol <- 1e-8
+
+repeat {
+    x1 <- rnorm(1,1,0.0001)
+    if (abs(x1-x0) < tol){
+        break
+    } else {
+        x0<-x1
+    }
+}
+print(x0)
+```
+
+Example of use of **next**
+
+```{r}
+for(i in 1:1000){
+    if(i == 5){
+        next   
+    } else if (i == 9){
+        break
+    }
+    print(i)
+}
+```
+
+
+For command-line interactive work, the *`apply` functions are more useful.
+
+## Your first R function.
+
+The first function
+
+```{r}
+add2 <- function(x,y){
+    x+y
+}
+add2(4,5)
+```
+
+Second function and the use of default parameters values.
+
+```{r}
+above10 <- function(x) {
+    use <- x>10
+    x[use]
+}
+
+above10(5:15)
+
+above <- function(x,n = 10){
+    use <- x>n
+    x[use]
+}
+above(5:18,10)
+```
+
+A third function
+
+```{r}
+columnmean <- function(y, removeNA = TRUE){
+    nc <- ncol(y)
+    means <-numeric(nc)
+    for(i in 1:nc){
+        means[i] <- mean(y[,i], na.rm = removeNA)
+    }
+    means
+}
+columnmean(airquality)
+columnmean(airquality,FALSE)
+```
+
+## Functions (Part 1)
+
+**Functions** can be created in R using the routine `function()`. This will create an object of class "function", which is an R object.
+
+In order to know the arguments (and if they have default values) of a function in R, we can use the routine `formals()` or `args()` for a human-readable version.
+
+```{r}
+formals(fun = rnorm)
+args(rnorm)
+```
+
+The previous example show that the `rnorm` function has 3 arguments: $n$, $mean$ and $sd$, and that the mean and sd parameters have $0$ and $1$ as *default* values. In that sense, the next two statements are correct and intended to do the same: generate a random number with normal standard distribution.
+
+```{r}
+rnorm(1)
+rnorm(1,0,1)
+```
+
+It is possible to match the function arguments by position or by name, though it is not recommendable to change the order in functions. In that sense, the following calls are the same
+
+```{r}
+y <- rnorm(100)
+sd(y)
+sd(x = y)
+sd(x = y, na.rm = FALSE)
+sd(na.rm = FALSE, x = y)
+sd(na.rm = FALSE, y)
+```
+
+The order for matching is the following:
+
+- Check for exact match for a named argument  
+- Check for a partial match  
+- Check for positional match  
+
+## Functions (Part 2)
+
+**Lazy evaluation** is related to the way evaluations are made in functions: they are made only if they are needed. For instance, in a function with two arguments but only one used, a function calling just one parameter will not produce an error.
+
+```{r}
+f <- function(a,b){
+    a^2
+}
+f(2,0)
+f(2)
+f(2,b = 1)
+f(b = 1)
+```
+
+### The "..." argument
+
+When you have a list of arguments from one function that will pass to another function, you can use the `...` argument. It is also necessary when the number of arguments passed to the function cannot be known in advance, which can be the case of the `paste()` and `cat()` functions.
+
+```{r}
+args(paste)
+args(cat)
+```
+
+However, every argument *after* the `...` must be named explicitly, or it cannot be matched
+
+```{r}
+paste("a","b",sep = ":")
+paste("a","b", se = ":")
+```
+
+### Scoping Rules - Symbol Binding
+
+When you create a function with certain name, R binds a value to that symbol. However, when there is a function with the same name you are trying to use, R searches through a series of environments, following the order:
+
+- Search the global environment  
+- Search the namespaces of each of the packages on the search list  
+
+The list can be shown using the function `search()`
+
+```{r}
+search()
+```
+
+For example, there is a `lm()` function used to fit linear models, but if you use the following code, R will use the defined function because it is in the Global Environment.
+
+```{r}
+lm <- function(x){ x*x}
+lm(3)
+```
+
+To order the packages in the search list, you can use the `library()` function in order, to set the order of the packages. When you use the `library()` function, then that package is put on the second position and everything else is shifted down to the list. 
+
+```{r}
+library(agricolae)
+library(nortest)
+search()
+ks.test <- function(x) {x*x*x}
+ks.test(3)
+rm(ks.test)
+ks.test(rnorm(100),rnorm(100))
+```
+
+### Scoping Rules - R Scoping Rules
+
+You can have functions defined inside other functions (in opposition to other programming languages, like C, where this can not be done).
+
+```{r}
+make.power <- function(n){
+    pow <- function(x){
+        x^n
+    }
+    pow
+}
+# The folowwing lines make functions: cube and square: x^3 and x^2.
+cube<- make.power(3)
+# The previous line makes a function: x^3. 
+square <- make.power(2)
+
+cube(5)
+square(-1)
+```
+
+```{r}
+ls(environment(cube))
+get("n", environment(cube))
+
+ls(environment(square))
+get("n", environment(square))
+```
+
+#### Lexical vs. Dynamical scoping
+
+```{r}
+y <- 10
+
+f <- function(x){
+    y<- 2
+    y^2 + g(x)
+}
+
+g <- function(x){
+    x*y
+}
+
+f(3)==34
+```
+
+Note that the calculation of the previous sentence is as follows
+
+\begin{center}
+(2)^2 + g(3) = 4 + (3)*(10) = 34
+\end{center}
+
+as the `y <-10` is in the environment where `g(x)` was defined and `y<- 2` is in the environment where `f(x)` is defined.
+
+
+### Scoping Rules - Optimization Example
+
+
+### Coding Standards
+
+- Use a text editor.  
+- Indent your code to improve readibility. (4 spaces minimum)
+- Limit the width of your code (80 columns?).  
+- Limit the length of individual functions.  
+
+### Dates and times in R
+
+`R` has developed a special representation for dates and times: **dates** are represented by the `Date` class whereas **times**, by the `POSIXct` or the `POSIXlt` classes.
+
+*Dates* can be coerced from a character string using the `as.Date()` function.
+
+```{r}
+x <- as.Date("1970-01-01")
+x
+unclass(x)
+# Number of days after 1st January 1970.
+unclass(as.Date("1989-05-20"))
+```
+
+```{r}
+x <- Sys.time()
+x
+p <- as.POSIXlt(x)
+p
+names(unclass(p))
+p$wday
+
+x <- Sys.time()
+x
+```
+
+The `strptime` function can be used when dates are written in different formats.
+
+```{r}
+datestring <- c("January 10, 2012 10:40", "December 9, 2011 9:10")
+x <- strptime(datestring, "%B %d, %Y %H:%M")
+x
+```
+
+```{r}
+x <- as.Date("2012-03-01")
+y <- as.Date("2012-02-28")
+x-y
+
+x <- as.POSIXct("2012-10-25 01:00:00")
+y <- as.POSIXct("2012-10-25 09:00:00", tz = "GMT")
+y-x
+```
+
+
+
+

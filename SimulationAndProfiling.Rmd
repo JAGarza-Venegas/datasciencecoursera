@@ -1,0 +1,239 @@
+---
+title: "Simulation and profiling"
+author: "Jorge A. Garza-Venegas"
+date: "29/7/2022"
+output: html_document
+---
+
+## The `str` function
+
+This function is used to display compactly the internal **structure** of an R object.
+
+```{r}
+str(str)
+
+str(lm)
+
+x <- rnorm(100,0,2)
+summary(x)
+str(x)
+
+f <- gl(40,10)
+str(f)
+```
+
+We can use this function with data frames to check the types of their column variables.
+
+```{r}
+head(airquality)
+str(airquality)
+```
+
+```{r}
+s <- split(airquality, airquality$Month)
+summary(s)
+str(s)
+```
+
+## Simulation - Generating random numbers.
+
+There are several functions in R to generate random variables, following the structure
+
+\[
+\textit{prefix} + \textit{suffix}  
+\]
+where **prefix** can be one of the following letters:
+
+- **d** for density.  
+- **r** for random number generation.  
+- **p** for cumulative distribution.  
+- **q** for quantile function.  
+
+and **suffix** is a distribution name. Some examples are 
+
++----------+-----------------------------+
+| suffix   | Distribution Name           |
++----------+-----------------------------+
+| binom    | Binomial distribution       |
++----------+-----------------------------+
+| geom     | Geometric distribution      |
++----------+-----------------------------+
+| pois     | Poisson distribution        |
++----------+-----------------------------+
+| norm     | Normal distribution         |
++----------+-----------------------------+
+| exp      | Exponential distribution    |
++----------+-----------------------------+
+| gamma    | Gamma distribution          |
++----------+-----------------------------+
+| weibull  | Weibull distribution        |
++----------+-----------------------------+
+| t        | t Distribution              |
++----------+-----------------------------+
+| f        | F distribution              |
++----------+-----------------------------+
+| chisq    | chi-squared distribution    |
++----------+-----------------------------+
+
+Let's take a look at some examples
+
+```{r}
+# Simulating random normal variables.
+x <- rnorm(10)
+x
+
+
+y<- rnorm(n = 10, mean = 20, sd = 2)
+y
+summary(y)
+```
+
+Setting a random number seed **ensures reproducibility**. In R, this can be done with the function `set.seed()`
+
+```{r}
+rnorm(5)
+rnorm(5)
+set.seed(1)
+rnorm(5)
+set.seed(1)
+rnorm(5)
+rnorm(5)
+```
+
+```{r}
+# Exponential distribution
+rexp(n = 10, rate = 1)
+# P(X <=1)
+pexp(q = 1, rate = 1)
+
+# Binomial distribution
+rbinom(n = 2, size = 10, prob = 0.5)
+# P(X < 5)
+qbinom(0.5, size = 10, prob = 0.5)
+qbinom(0.6230469, size = 10, prob = 0.5)
+pbinom(6,10,0.5) - pbinom(5,10,0.5)
+dbinom(6,10,0.5)
+```
+
+## Simulation - Simulating a linear model
+
+In order to model the linear model given by 
+
+\[
+y = \beta_0 + \beta_1x + \varepsilon
+\]
+where $\varepsilon \sim \mathcal{N}\left(0,\sigma^2\right)$ and assuming $\beta_0 = 0.5$ and $\beta_1 = 5$.
+
+```{r}
+beta_0 <- 0.5
+beta_1 <- 5
+set.seed(20)
+x <- rnorm(100)
+e <- rnorm(100,0,2)
+y <- beta_0 + beta_1*x + e
+summary(y)
+plot(x,y)
+```
+
+Generate binary data using a Binomial Distribution.
+
+```{r}
+beta_0 <- 0.5
+beta_1 <- 5
+set.seed(20)
+x <- rbinom(100, 1,0.5)
+e <- rnorm(100,0,2)
+y <- beta_0 + beta_1*x + e
+summary(y)
+plot(x,y)
+```
+
+Another example. Assume that $Y \sim Poisson\left(\mu\right)$ and that $\log\left(\mu\right) = \beta_0 + \beta_1 x$ with $\beta_0 = 0.5$ and $\beta_1 = 0.3$.
+
+```{r}
+set.seed(1)
+beta_0 <- 0.5
+beta_1 <- 0.3
+x <-rnorm(100)
+log.mu <- beta_0 + beta_1*x
+y <- rpois(n = 100, exp(log.mu))
+summary(y)
+plot(x,y)
+```
+
+## Simulation - Random Sampling
+
+One useful function is the `sample` function.
+
+```{r}
+set.seed(1)
+sample(1:10,4)
+sample(1:10,4)
+sample(letters,5)
+sample(1:10)  # This is a permutation.
+
+sample(1:10, replace = TRUE)
+```
+
+## R Profiler (Part 1)
+
+**Profiling** is a systematic way to examine how much time is spend in different parts of a program and it is very useful for code optimization.
+
+General principles of optimization
+
+- Design, first, then optimize.  
+- "Premature optimization is the root of all evil" Donald Knuth.  
+- Measure (collect data), do not guess.  
+
+### The `system.time()` function
+
+This function computes the time (in seconds) needed to execute an expression as it can be seen in the following examples.
+
+```{r}
+system.time(rnorm(100))
+
+system.time(rnorm(100000000))
+```
+
+where **user** is the time charged to the CPU(s) for this expression and **elapsed** is the time experienced by the user and sometimes called "wall clock" time. **Elapsed** might be smaller than **user** when your computer has multiple processors and is capable of use them. (One way to use them is via the **parallel** package)
+
+```{r}
+system.time(readLines("http://www.jhsph.edu"))
+
+hilbert <- function(n){
+    i <- 1:n
+    1/outer(i-1,i,"+")
+}
+x <- hilbert(1000)
+system.time(svd(x))
+```
+
+Longer expression can be timed using curly braces.
+```{r}
+system.time({
+    n <- 100
+    r <- numeric(n)
+    for (i in 1:n) {
+        x <-rnorm(n)
+        r[i] <- mean(x)
+    }
+})
+```
+
+This is useful when you now where the problem is, or at least have an idea where to check.
+
+## R Profiler (Part 2)
+
+The profiler in R is started with the `RProf()` function. It keeps track of the function call stack at regularly sampled intervals (default is 0.02 secs) and tabulates how much time is spend in each function.
+
+The output of this function is usually "not readable", so that the `summaryRProf()` might be used. 
+
+You have to note that C or Fortran code are not profiled.
+
+
+
+
+
+
+
+

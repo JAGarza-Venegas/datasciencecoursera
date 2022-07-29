@@ -539,6 +539,18 @@ x*y
 x/y
 ```
 
+Similarly we can do this with matrices
+
+```{r}
+x <- matrix(1:4, 2, 2) 
+y <- matrix(rep(10,4), 2, 2)
+x
+y
+
+x*y # Element wise multiplication.
+
+x %*% y #Matrix multiplication
+```
 
 
 

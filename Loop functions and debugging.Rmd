@@ -1,11 +1,9 @@
 ---
-title: "R Notebook"
+title: "Week 3: Loop functions and debugging"
 author: "Jorge Garza-Venegas"
 date: "2022-07-27"
 output: html_notebook
 ---
-
-# Week 3: Loop Functions and Debugging
 
 ## Loop functions - lapply and sapply
 
@@ -331,12 +329,3 @@ lm(y ~ x)
 options(error = recover)
 read.csv("nosuchfile")
 ```
-
-
-Bla bla
-
-```{r}
-rnorm(1)
-```
-
-
