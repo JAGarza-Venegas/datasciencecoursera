@@ -1,0 +1,180 @@
+---
+title: "Getting and cleaning data Week 1"
+author: "Jorge A. Garza-Venegas"
+date: '2022-12-13'
+output: html_document
+---
+
+**Disclaimer:** These are my notes of the course *"Getting and cleaning data"* from the Data Science Specialization offered by Johns Hopkins University in Coursera. These notes are based on the Jeff Leek videos from that course.
+
+As we will be analyzing data, we will first consider the process of getting and cleaning data using R. 
+
+The four things you should have.
+
+- The raw data  
+- A tidy data set  
+- A code book describing each variable and its values in the tidy data set.  
+- An explicit and exact recipe you used to get from raw data to tidy data and the code book.
+
+According to Wikipedia, "**data** are values of qualitative or quantitative variables, belonging to a set of items".
+
+**Raw data** is the original source of data, and it is often hard to use as it is for data analyses and have to be *processed* (which is part of the data analysis). The **processed data** is ready for the analysis, and it includes merging, sub-setting, transforming, etc. Please take into account that all steps should be documented.
+
+Once the **raw data** is **processed** we will have **tidy** data. 
+
+## Downloading files
+
+Checking and creating directories: an example of how to check if a directory already exists and to create one is given in the following chunk of code:
+
+```{r}
+if(!file.exists("ExampleofCreatingFile")){
+    dir.create("ExampleofCreatingFile")
+}
+```
+
+Getting data from the internet can be done using the `download.file()` function.
+
+```{r}
+# fileURL <- "https://www.stats.govt.nz/assets/Uploads/Effects-of-COVID-19-on-trade/Effects-of-COVID-19-on-trade-At-15-December-2021-provisional/Download-data/effects-of-covid-19-on-trade-at-15-december-2021-provisional.csv"
+# download.file(url = fileURL, destfile = ".\\ExampleofCreatingFile\\COVID.csv")
+# list.files(".\\ExampleofCreatingFile")
+```
+
+## Reading files
+
+### Local flat files
+
+This can be done using the `read.table()` function. **Warning!** as it reads the data into RAM, therefore *big data can cause problems.*
+
+```{r}
+COVID <- read.table(".\\ExampleofCreatingFile\\COVID.csv", sep = ",", header = TRUE, na.string = "")
+Camera <- read.csv(".\\ExampleofCreatingFile\\Fixed_Speed_Cameras.csv")
+head(COVID)
+head(Camera)
+```
+
+### Excel files 
+
+```{r}
+library(xlsx)
+Irisdata <- read.xlsx(".\\ExampleofCreatingFile\\IrisSetosaCompleto.xlsx", sheetIndex = 1, header = TRUE)
+head(Irisdata)
+
+## Subsetting
+IrisdataSubset <- read.xlsx(".\\ExampleofCreatingFile\\IrisSetosaCompleto.xlsx", sheetIndex = 1, colIndex = 3:5, rowIndex = 1:10)
+head(IrisdataSubset)
+```
+
+### Reading XML
+
+**XML** stands for *Extensible Markup Language* and it is used to store **structured** data. I DID NOT FIND ANY REFERENCE TO AN EASY WAY TO MAKE THIS WORK. 
+
+```{r}
+library(RCurl)
+library(XML)
+fileName <- system.file("exampleData", "mtcars.xml", package="XML")
+doc <- xmlParse(fileName,useInternal = TRUE)
+rootNode <- xmlRoot(doc)
+xmlName(rootNode)
+names(rootNode)
+
+rootNode[[1]]
+rootNode[[1]][[1]]
+xmlSApply(rootNode,xmlValue)
+
+xpathSApply(rootNode, "//variables",xmlValue)
+```
+### JSON files
+
+**JSON** stands for *JavaScript Object Notation*.
+
+
+```{r}
+library(jsonlite)
+jsonData <- fromJSON("https://api.github.com/users/jtleek/repos")
+names(jsonData)
+names(jsonData$owner)
+
+jsonData$owner$login
+```
+Convert to JSON data
+
+```{r}
+myjson <- toJSON(iris, pretty = TRUE)
+cat(myjson)
+
+iris2<- fromJSON(myjson)
+head(iris2)
+```
+
+## The data.table package
+
+The function `data.table()` is written in C, so it is much faster, for instance, at subsetting, group and updating.
+
+```{r}
+library(data.table)
+DF <- data.frame(x = rnorm(9), y = rep(c("a","b","c"),each = 3), z = rnorm(9))
+head(DF,5)
+
+DT <-data.table(x = rnorm(9), y = rep(c("a","b","c"),each = 3), z = rnorm(9))
+head(DT,5)
+
+
+tables()
+
+# Subsetting rows
+
+DT[2,]
+DT[DT$y=="a",]
+DT[c(2,3)] # It takes 2nd and 3rd rows of DT.
+
+
+# Subsetting by columns
+DT[, list(mean(x), sum(z))]
+DT[,table(y)]
+```
+
+We can add new columns easily
+
+```{r}
+DT[,w:=z^2]
+DT
+
+# Multiple operations
+DT[,m:={tmp <-(x+z); log2(tmp+5)}]
+DT
+```
+
+```{r}
+# Special variables
+set.seed(123)
+DT <-data.table(x = sample(letters[1:3],1E5,TRUE))
+DT[,.N,by = x]
+```
+
+```{r}
+# Use of keys
+DT <- data.table(x = rep(c("a","b","C"),each = 100), y = rnorm(300))
+setkey(DT,x)
+DT['a']
+```
+
+The use of keys facilitates the joins of data sets.
+
+```{r}
+DT1 <- data.table(x = c("a","b","b","dt1"), y = 1:4)
+DT2 <- data.table(x = c("a", "b", "dt2"), z = 5:7)
+setkey(DT1,x)
+setkey(DT2,x)
+merge(DT1,DT2)
+```
+
+Fast reading
+```{r}
+big_df <- data.frame(x = rnorm(1E6), y = rnorm(1E6))
+file <- tempfile()
+write.table(big_df, file = file, row.names = FALSE, col.names = TRUE, sep = "\t", quote = FALSE)
+system.file(fread(file))
+system.time(read.table(file, header = TRUE, sep = "\t"))
+```
+
