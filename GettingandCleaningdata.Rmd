@@ -171,10 +171,106 @@ merge(DT1,DT2)
 
 Fast reading
 ```{r}
-big_df <- data.frame(x = rnorm(1E6), y = rnorm(1E6))
-file <- tempfile()
-write.table(big_df, file = file, row.names = FALSE, col.names = TRUE, sep = "\t", quote = FALSE)
-system.file(fread(file))
-system.time(read.table(file, header = TRUE, sep = "\t"))
+# big_df <- data.frame(x = rnorm(1E6), y = rnorm(1E6))
+# file <- tempfile()
+# write.table(big_df, file = file, row.names = FALSE, col.names = TRUE, sep = "\t", quote = FALSE)
+# system.file(fread(file))
+# system.time(read.table(file, header = TRUE, sep = "\t"))
+```
+# Week 2
+
+## Reading from MySQL
+
+Connecting and listing databases. Do not forget to disconnect from the server.
+```{r}
+# install.packages("RMySQL")
+library(RMySQL)
+ucscDb <- dbConnect(MySQL(), user = "genome", host = "genome-mysql.cse.ucsc.edu")
+result <-dbGetQuery(ucscDb,"show databases;")
+dbDisconnect(ucscDb)
 ```
 
+```{r}
+hg19 <- dbConnect(MySQL(), user = "genome", db = "hg19", host = "genome-mysql.cse.ucsc.edu")
+allTables <- dbListTables(hg19)
+length(allTables)
+allTables[1:6]
+
+dbListFields(hg19, "affyU133Plus2")
+
+dbGetQuery(hg19, "select count(*) from affyU133Plus2")
+
+# Read from the table
+affyData <- dbReadTable(hg19, "affyU133Plus2")
+head(affyData)
+
+# Select a specific subset
+
+query <- dbSendQuery(hg19, "select * from affyU133Plus2 where MisMatches between 1 and 3")
+affyMis <- fetch(query)
+quantile(affyMis$misMatches)
+affyMisSmall <- fetch(query, n= 10)
+dbClearResult(query)
+dim(affyMisSmall)
+```
+## Reading from HDF5
+
+```{r}
+# if (!require("BiocManager", quietly = TRUE))
+#     install.packages("BiocManager")
+# BiocManager::install()
+# biocLite("rhdf5")
+```
+
+## Reading from the Web
+
+Open a connection and do not forget to close the connection.
+
+```{r}
+con <- url("https://scholar.google.com.mx/citations?user=8ODrYesAAAAJ&hl=es")
+htmlCode <- readLines(con)
+close(con)
+htmlCode
+
+# library(RCurl)
+# library(XML)
+# url <- "https://scholar.google.com.mx/citations?user=8ODrYesAAAAJ&hl=es"
+# html <- htmlTreeParse(url)
+# xpathSApply(html, "//title", xmlValue)
+```
+
+
+```{r}
+library(httr)
+url <- "https://scholar.google.com.mx/citations?user=8ODrYesAAAAJ&hl=es"
+html2 <- GET(url)
+content2 <- content(html2, as = "text")
+parsedHtml <- htmlParse(content2, asText = TRUE)
+xpathSApply(parsedHtml, "//title", xmlValue)
+```
+
+```{r}
+# Using handles
+
+google <- handle("http://google.com")
+pg1 <- GET(handle = google, path = "/")
+pg2 <- GET(handle = google, path = "search")
+```
+
+## Reading from the APIs
+
+**API** stands for *Application Programming Interfaces*.
+
+## Reading from other sources
+
+Remember that:
+
+- `file` opens a connection to a text file  
+- `url` opens a connection to a url.  
+- `gzfile` opens a connection to a .gz file  
+- `bzfile` opens a connection to a .bz2 file  
+- **Rememeber** to close connections
+
+Other files can be read from R, usign the `foreign` package, which can load data from Minitab, S, SAS, SPSS, Stata, among others.
+
+The structure of the functions is `read.foo`. For example, `read.mtp` loads a Minitab file.
