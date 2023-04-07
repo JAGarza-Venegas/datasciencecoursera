@@ -1,0 +1,529 @@
+---
+title: "EDA"
+author: "JAGV"
+date: '2023-01-23'
+output:
+  html_document: default
+  pdf_document: default
+---
+
+# Week 1: Lesson 1: Graphs.
+
+We DON'T use exploratory graphs to communicate results. Instead, exploratory graphs are the initial step in an investigation, the "quick and dirty" tool used to point the data scientist in a fruitful direction. A scientist might need to make a lot of exploratory graphs in order to develop a personal understanding of the problem being studied.
+
+## Principles of analytic graphics.
+
+- Principle 1: Show comparisons. 
+    - Remember they are always relative, so the basis has to be shown.
+- Principle 2: Show causality, or mechanism or explanation or systematic structure.
+    - What is your causal framework for thinking about a question?
+- Principle 3: Show multivariate data. Recall the **Simpson's paradox**. 
+    - Multivariate is more than 2 variables.
+    - The real world is multivariate. 
+    - Need to escape "flatland"
+- Principle 4: Integration of evidence.
+    - Don't let the tool drive the analysis: completely integrate words, numbers, images, diagrams. 
+- Principle 5: Describe and document the evidence with appropriate labels, scales, sources, etc.
+- Principle 6: Content is king: Analytical presentations ultimately stand or fall depending on the quality, relevance, and integrity of their content. 
+
+## Exploratory graphs.
+
+**One dimensional summaries of data:**
+
+- Five-number summary. (minimum, the first quartile, the median, (the mean), the third quartile and the maximum). This can be obtained with the `summary` function.
+- Boxplot.
+- Histograms.
+- Density plots.
+- Barplots.
+
+```{r}
+x <- rexp(1000,1)
+summary(x)
+
+boxplot(x, col = "blue")
+abline(h = mean(x))
+hist(x, col = "red", breaks = 25)
+rug(x)
+abline(v = median(x), col = "green", lwd = 3)
+    ```
+
+**Two dimensional summaries:**
+
+- multiple/overlayed 1-D plots.
+- scatterplots.
+- smooth scatterplots.
+
+```{r}
+data(mtcars)
+
+boxplot(mpg ~ vs, data = mtcars, col = "blue")
+
+with(mtcars, plot(hp, mpg, col = vs+1))
+
+par(mfrow = c(2,1), mar = c(4,4,2,1))
+hist(subset(mtcars, vs == 0)$mpg, col = "red")
+hist(subset(mtcars, vs == 1)$mpg, col = "blue")
+
+
+
+par(mfrow = c(1,2), mar = c(5,4,2,1))
+with(subset(mtcars, vs == 0), plot(mpg, hp, main = "vs = 0"))
+with(subset(mtcars, vs == 1), plot(mpg, hp, main = "vs = 1"))
+```
+
+More than 2 dimensional summaries:
+
+- Overlayed/multiple 2-D plots; coplots.
+- Use color, size, shape to add dimensions. 
+- Spinning plots.
+- Actual 3-D plots (not that useful).
+
+# Week 1: Lesson 2: Plotting.
+
+## Plotting systems in R.
+
+**The base plotting system**: is the artist's palette model because you start with a blank canvas and build up from there. Start with the plot function and use annotations functions to add or modify, such as: `text, lines, points, axis`. You can not go back once plot has started (for instance, to adjust margins), you need to plan in advance.
+
+```{r}
+library(datasets)
+data(cars)
+with(cars, plot(speed,dist))
+```
+
+**The lattice system**: plots are created with a single function call (being `xyplot` and `bwplot` common examples), most of them useful for conditioning types of plots. One drawback is that you can not add anything to the plot once it is created.
+
+```{r}
+library(lattice)
+state <- data.frame(state.x77, region = state.region)
+xyplot(Life.Exp ~ Income | region, data = state, layout = c(4,1))
+```
+
+**The `ggplot2` System**: Mixes elements of base and lattice being generally easier/more intuitive to use than lattice. Its default mode make many choices for you, but you can still customize.
+
+```{r}
+library(ggplot2)
+data(mpg)
+qplot(displ, hwy, data = mpg)
+```
+
+## Base Plotting system.
+
+```{r}
+library(datasets)
+hist(airquality$Ozone)
+with(airquality, plot(Wind,Ozone))
+```
+
+```{r}
+library(datasets)
+str(airquality)
+boxplot(Ozone ~ Month, airquality, xlab = "Month", ylab = "Ozone (ppb)")
+```
+
+Some important base graphics parameters:
+
+- `pch` is the plotting symbol, being the open circle the default. 
+- `lty` is for line type, being the default the solid line. 
+- `lwd` is the line width.
+- `col` is for the color, specified by a number, string or hex code; the function `colors` display a list of colors by name.
+- `xlab` and `ylab` are the $x$ and $y$ axis label.
+- `las` the orientation of the axis labels.
+- `bg` background color.
+- `mar` the margin size.
+- `oma` is the outer margin size.
+- `mfrow` is the number of plots by row, whereas `mfcol` is the same for columns. Plots are filled row-wise or column-wise when `mfrow` and `mfcol` are used, respectively.
+
+Default values: 
+```{r}
+par(c("bg", "col", "mar", "mfrow"))
+# mar is clockwise starting at bottom: bottom, left, top, right.
+```
+
+## Base plotting functions
+
+- `plot` make a scatterplot or other type of plot depending on the object class being plotted.
+- `lines` and `points` add lines and points, respectively, to a plot. 
+- `text` adds text labels to a plot, using specified $x,y$ coordinates whereas `mtext` adds arbitrary text to the margins (inner or outer) of the plot.
+- `title` add annotations to $x$, $y$ axis labels, title, subtitle, outer margin. 
+- `axis` adds axis ticks/labels.
+
+```{r}
+library(datasets)
+with(airquality, plot(Wind, Ozone))
+title(main = "Ozone and Wind in New York City")
+
+with(airquality, plot(Wind, Ozone, main = "Ozone and Wind in New York City"))
+with(subset(airquality, Month ==5), points(Wind, Ozone, col = "blue"))
+
+with(airquality, plot(Wind, Ozone, main = "Ozone and Wind in New York City", type = "n"))
+with(subset(airquality, Month ==5), points(Wind, Ozone, col = "blue"))
+with(subset(airquality, Month !=5), points(Wind,Ozone,col = "red"))
+legend("topright", pch = 1, col = c("blue", "red"), legend = c("May", "Other Months"))
+
+with(airquality, plot(Wind, Ozone, main = "Ozone and Wind in NY", pch = 20))
+model <- lm(Ozone ~ Wind, airquality)
+abline(model, lwd = 2)
+```
+
+```{r}
+par(mfrow = c(1,2))
+with(airquality, {
+    plot(Wind, Ozone, main = "Ozone and Wind")
+    plot(Solar.R, Ozone, main = "Ozone and Solar Radiation")
+    })
+```
+
+```{r}
+par(mfrow = c(1,3), mar = c(4,4,2,1), oma = c(0,0,2,0))
+with(airquality, {
+    plot(Wind, Ozone, main = "Ozone and Wind")
+    plot(Solar.R, Ozone, main = "Ozone and Solar Radiation")
+    plot(Temp, Ozone, main = "Ozone and Temperature")
+    mtext("Ozone and Weather in NYC", outer = TRUE)
+})
+```
+
+```{r}
+x <- rnorm(100)
+hist(x)
+y <- rnorm(100)
+plot(x,y)
+z <- rnorm(100)
+plot(x,z)
+plot(x,y)
+par(mar = c(2,2,2,2))
+plot(x,y)
+par(mar = c(4,4,2,2))
+plot(x,y)
+
+plot(x,y, pch = 20)
+plot(x,y, pch = 19)
+plot(x,y, pch = 2)
+plot(x,y, pch = 3)
+plot(x,y, pch = 4)
+plot(x,y, pch = 20)
+title("Scatterplot")
+text(-2,-2, "Label")
+legend("topleft", legend = "Data", pch = 20)
+fit <- lm(y ~ x)
+abline(fit, lwd = 3, col = "blue")
+
+
+plot(x,y, xlab = "Weight", ylab = "Height", main = "Scatterplot", pch = 20)
+legend("topright", legend = "Data", pch = 20)
+fit <- lm(y ~ x)
+abline(fit, lwd = 3, col = "red")
+
+z <- rpois(100, 2)
+par(mfrow = c(2,2))
+plot(x,y, pch = 20)
+plot(x,z, pch = 19)
+par(mfrow = c(1,1))
+
+x <- rnorm(100)
+y <- x + rnorm(100)
+g <- gl(2, 50, labels = c("Male", "Female"))
+plot(x,y)
+
+plot(x,y, type = "n")
+points(x[g == "Male"], y[g == "Male"], col = "green")
+points(x[g == "Female"], y[g == "Female"], col = "blue")
+```
+
+# Week 1: Lesson 3: Graphics Device in R.
+
+A graphics device is something where you can make a plot appear: a window on your computer (screen device), a PDF file (file device), a PNG or JPEG file (file device), a scalable vector graphics (SVG) file (device file). The most common place for a plot to be sent is the screen device, which is launched on Windows with `windows()`.
+
+```{r}
+# ?Devices
+library(datasets)
+with(faithful, plot(eruptions, waiting))
+title(main = "Old Faithful Geyser data")
+```
+
+```{r}
+pdf(file = "myplot.pdf")
+with(faithful, plot(eruptions, waiting))
+title(main = "Old Faithful Geyser data")
+# Do not forget to close the PDF file device.
+dev.off()
+```
+
+## Graphics file devices.
+
+There are two basic types of files devices: *vector* and *bitmap* devices.
+
+Examples of **vector** formats include 
+
+- **pdf**: useful for line-type graphics, resizes well, usually portable, not efficient if the plot has many objects/points.
+- **svg**: XML-based scalable vector graphics; supports animation and interactivity, potentially useful for web-based plots.
+- **windows metafile** windows metafile format.
+- **postcript** older format, also resizes well, usually portable, can be used to create encapsulated postcript files, Windows systems often do not have a postcript viewer.
+
+Examples of **bitmap** formats include 
+
+
+- **png**: bitmapped format, good for line drawings or images with solid colors, uses lossless compression. Most web browsers can read this format natively, good for plotting many points, does not resize well.
+- **jpeg**: good for photographs or natural scenes, uses lossy compression, good for plotting many points, does not resize well, can be read by almost any computer and any web browser, not great for line drawings. 
+- **tiff** creates bitmap files in the TIFF format, supports lossless compression.
+- **bmp** a native Windows bitmapped format.
+
+It is possible to open multiple graphics device (screen, file or both), for example when viewing multiple plots at once. However, plotting can only occur on one graphics device at a time. To know which device is currently active, the function `dev.cur` can be used. Every open graphics device is assigned an integer $\geq 2$, and this is used to change the current graphics device by means of the `dev.set(<integer>)` function.
+
+A plot can be copied from one device to another, and this can be useful since some plots require a lot of code in order to do so again for a different device. However, **that is not an exact operation**, so the result may not be identical to the original. 
+
+```{r}
+library(datasets)
+with(faithful, plot(eruptions, waiting))
+title(main = "Old Faithful Geyser data")
+dev.copy(png, file = "geyserplot.png")
+# Do not forget to close the PDF file device.
+dev.off()
+```
+
+# Week 2: Lesson 1: Lattice plotting system.
+
+Some `lattice` functions.
+
+- `xyplot` the main function used to create scatterplots.
+- `bwplot` function to create boxplots ("**b**ox and **w**hiskers")
+- `histogram` produces histograms.
+- `stripplot` is similar to boxplots but with actual points.
+- `dotplot` plot dots on "violin strings".
+- `splom` scatterplot matrix. 
+- `levelplot`, `contourplot` for plotting "image" data.
+
+The usual format of one call to a lattice function is 
+`xyplot(y~x|f*g, data)`
+
+where `~` stands for the *formula notation* ($y$ is on the $y$ axis and $x$ on the $x$-axis), $f$ and $g$ are optional conditioning variables and $*$ indicates an interaction between them.
+
+```{r}
+library(datasets)
+library(lattice)
+xyplot(Ozone ~ Wind, data = airquality)
+```
+
+```{r}
+library(datasets)
+library(lattice)
+airquality <- transform(airquality, Month = factor(Month))
+xyplot(Ozone ~ Wind | Month, data = airquality, layout = c(5,1))
+```
+
+Note that lattice functions behave differently from base graphics functions in one critical way:
+
+- Base graphics functions plot data directly to the graphics device whereas lattice graphics functions returns an object of class **trellis**.
+- In order to plot data on the graphics device, the print methods for lattice functions are used.
+- Lattice functions return "plot objects" that can, in principle, be stored. On the command line, "trellis" objects are auto-printed.
+
+
+```{r}
+p <- xyplot(Ozone ~ Wind, data = airquality)
+print(p)
+xyplot(Ozone ~ Wind, data = airquality)
+```
+Lattice panel functions
+
+
+```{r}
+set.seed(10)
+x <-rnorm(100)
+f <- rep(0:1,50)
+y <- x + f - f*x + rnorm(100,sd = 0.5)
+f <- factor(f, labels = c("Group 1", "Group2"))
+xyplot(y~ x|f, layout = c(2,1))
+```
+
+```{r}
+xyplot(y~ x|f, panel = function(x,y,...){
+    panel.xyplot(x,y,...)
+    panel.abline(h = median(y), lty=2)
+})
+```
+```{r}
+xyplot(y~ x|f, panel = function(x,y,...){
+    panel.xyplot(x,y,...)
+    panel.lmline(x,y,col = 2)
+})
+```
+
+**Note** The lattice system is ideal for creating conditioning plots where you examine the same kind of plot under several different conditions. Lattice plots are constructed usually with a single function call and the defaults for margins and space are usually sufficient.
+
+# Week 2: Lesson 2: ggplot2
+
+In this graphic system, plots are made up of *aesthetics* (size, shape, color) and *geoms* (lines, points).
+
+Factors are important for indicting subsets of the data; they should be labeled. Whereas `qplot` is okay for most operations, `ggplot` is the core function and is more flexible.
+
+```{r}
+library(ggplot2)
+str(mpg)
+
+qplot(displ, hwy, data = mpg)
+```
+
+```{r}
+library(ggplot2)
+qplot(displ, hwy, data = mpg, color = drv)
+```
+
+Now, we are going to add a *geom*.
+
+```{r}
+qplot(displ, hwy, data = mpg, geom = c("point", "smooth"))
+```
+
+Now, the histograms.
+
+```{r}
+qplot(hwy, data = mpg, fill = drv)
+```
+
+Now the facets (they are like panels)
+
+```{r}
+qplot(displ, hwy, data = mpg, facets = .~drv)
+```
+
+```{r}
+qplot(hwy, data = mpg, facets = drv ~., binwidth =2)
+```
+
+```{r}
+qplot(Ozone, data = airquality)
+qplot(Ozone, data = airquality, geom = "density")
+```
+
+```{r}
+qplot(mpg, data = mtcars, fill = as.factor(vs))
+qplot(mpg, data = mtcars, geom = "density", col = as.factor(vs))
+```
+Now scatterplots, to be divided by a factor.
+```{r}
+qplot(mpg, hp, data = mtcars, shape = as.factor(cyl))
+qplot(mpg, hp, data = mtcars, col = as.factor(cyl))
+```
+
+Now the scatterplots with linear regression line.
+
+```{r}
+qplot(mpg, hp, data = mtcars, col = as.factor(cyl)) + geom_smooth(method = "lm")
+```
+
+Split the graphs using facets.
+
+```{r}
+qplot(mpg, hp, data = mtcars, facets = .~as.factor(cyl)) + geom_smooth(method = "lm")
+```
+
+Basic components of a ggplot2 plot:
+
+- a **data frame**
+- **aesthetic mappings**: how the data are mapped to color, size.
+- **geoms**: geometric objects like points, lines, shapes.
+- **facets**: for conditional plots.
+- **stats**: statistical transformations like binning, quantiles, smoothing.
+- **scales**: what scale an aesthetic map uses (example: male = red, female = blue)
+- **coordinate system** 
+
+Plots are built up in layers: plot the data, overlay a summary, metadata and annotation
+
+ 
+```{r}
+qplot(mpg, hp, data = mtcars, facets = .~ as.factor(vs), geom = c("point", "smooth"), method = "lm")
+```
+
+Building up in layers.
+```{r}
+g <- ggplot(mtcars, aes(mpg, hp))
+print(g)
+p <- g + geom_point()
+print(p)
+g + geom_point()
+```
+
+```{r}
+g <- ggplot(mtcars, aes(mpg, hp))
+g + geom_point()
+g + geom_point() + geom_smooth()
+g + geom_point() + geom_smooth(method = "lm")
+
+g + geom_point() + facet_grid(.~ as.factor(cyl)) + geom_smooth(method = "lm")
+```
+
+Now the annotations 
+
+- Labels: `xlab(), ylab(), labs(), title()`
+- For things that only makes sense globally, use `theme()`
+- Two standard appearence themes are: `theme_gray(), theme_bw()`
+
+```{r}
+g + geom_point(color = "steelblue", size = 4, alpha = 1/2)
+
+g + geom_point(aes(color = as.factor(cyl)), size = 4, alpha = 1/2)
+```
+
+```{r}
+g + geom_point(aes(color = as.factor(cyl))) + labs(title = "Here comes the graph title") + labs(x = "Milleage per Gallon", y = "Horse Power")
+```
+Modify the geom function
+
+```{r}
+g + geom_point(aes(color = as.factor(cyl)), size = 2, alpha = 1/2) + geom_smooth(size = 4, linetype = 2, method = "lm", se = FALSE)
+```
+
+And the background
+
+```{r}
+g + geom_point(aes(color = as.factor(cyl)), size = 2, alpha = 1/2) + geom_smooth(size = 4, linetype = 2, method = "lm", se = FALSE) + theme_bw()
+```
+
+And the font
+
+```{r}
+g + geom_point(aes(color = as.factor(cyl)), size = 2, alpha = 1/2) + geom_smooth(size = 4, linetype = 2, method = "lm", se = FALSE) + theme_bw(base_family = "Times")
+```
+Notes about axis limits.
+
+```{r}
+
+testdat<- data.frame(x = 1:100, y = rnorm(100))
+testdat[50,2] <- 100
+plot(testdat$x, testdat$y, type = "l", ylim = c(-3,3))
+library(ggplot2)
+g <- ggplot(testdat, aes(x=x, y=y))
+g + geom_line()
+```
+You have to be careful on how outliers are considered when using ggplot. When using `ylim`, the outlier is removed. To avoid that, use `coord_cartesian.`
+
+```{r}
+testdat<- data.frame(x = 1:100, y = rnorm(100))
+testdat[50,2] <- 100
+library(ggplot2)
+g <- ggplot(testdat, aes(x=x, y=y))
+g + geom_line()+ylim(-3,3)
+g + geom_line() + coord_cartesian(ylim = c(-3,3))
+```
+
+
+```{r}
+df <- mtcars
+cutpoints <- quantile(df$wt, seq(0,1,length = 5), na.rm =TRUE)
+df$wtquartiles <- cut(df$wt, cutpoints)
+levels(df$wtquartiles)
+
+g <- ggplot(df, aes(mpg, hp))
+g + geom_point(alpha = 1/3) + facet_wrap(vs ~ wtquartiles, nrow = 2, ncol = 4) + geom_smooth(method = "lm", se = FALSE, col = "steelblue") + theme_bw(base_family = "Avenir", base_size = 10) + labs(x = expression("Miles per gallon")) + labs(y = "Horse Power")+ labs(title = "Large example")
+```
+
+
+
+
+
+
+
+
+
+
+

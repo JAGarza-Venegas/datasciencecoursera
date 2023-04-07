@@ -1,0 +1,681 @@
+---
+title: "Week 3 and 4"
+author: "JAGV"
+date: '2023-04-03'
+output: html_document
+---
+
+# Week 3: Clustering
+
+## Hierarchical clustering.
+
+An agglomerative approach works in the following way:
+
+Find the closest two things --> put them together --> find next closest.
+
+In order to do so, it requires:
+
+**Define a distance** and a **merging approach**
+
+to produce:
+
+a tree showing how close things are to each other.
+
+
+Distance or similarity:
+
+- **Continuous** - euclidean distance.
+- **Continuous** - correlation similarity.
+- **Binary** - Manhattan distance.
+
+You should pick a distance that makes sense for your problem!
+
+Let's take a look at an example:
+
+```{r}
+set.seed(1234)
+par(mar = c(0,0,0,0))
+x <- rnorm(12,mean = rep(1:3,each = 4), sd = 0.2)
+y <- rnorm(12, mean = rep(c(1,2,1), each = 4), sd = 0.2)
+plot(x,y, col = "blue", pch = 19, cex = 2)
+text(x+0.05, y+0.05, labels = as.character(1:12))
+```
+
+```{r}
+df <- data.frame(x = x, y = y)
+# Euclidean distance matrix.
+dist(df)
+```
+This information can be organized in a dendogram. The default dendogram in R is obtained with the following code:
+
+```{r}
+distxy <- dist(df)
+hClustering <- hclust(distxy)
+plot(hClustering)
+```
+and we can generate *prettier dendograms* using the function defined below:
+
+```{r}
+myplclust <- function(hclust, lab = hclust$labels, lab.col = rep(1, length(hclust$labels)),hang = 0.1,...)
+{
+    y <- rep(hclust$height, 2)
+    x <- as.numeric(hclust$merge)
+    y <- y[which(x<0)]
+    x <- x[which(x<0)]
+    x <- abs(x)
+    y <- y[order(x)]
+    x <- x[order(x)]
+    plot(hclust, labels = FALSE, hang = hang,...)
+    text(x = x, y = y[hclust$order] - (max(hclust$height)*hang), labels = lab[hclust$order], col = lab.col[hclust$order], srt = 90, adj = c(1,0.5), xpd = NA, ...)
+}
+```
+
+with which we obtain:
+
+```{r}
+hClustering <- hclust(distxy)
+myplclust(hClustering, lab = rep(1:3, each = 4), lab.col = rep(1:3, each = 4))
+```
+
+
+
+### Merging points - complete
+
+You can do that by considering its mass center or gravity center, etcetera.
+
+
+### The function heatmap()
+
+Another way to visualize matrix information is by the `heatmap()` function.
+
+```{r}
+df <- data.frame(x = x, y = y)
+set.seed(143)
+dM <- as.matrix(df)[sample(1:12),]
+heatmap(dM)
+```
+
+Additional comments:
+
+- Gives an idea of the relationships between variables/observations.
+- The picture may be unstable.
+- It s deterministic
+- Choosing where to cut isn't always obvious.
+- Should be primarily used for exploration.
+
+## The K-means clustering
+
+It is a partitioning approach which consider the following steps:
+
+Fox a number of clusters --> Get "centroids" of each cluster --> Assign things to the closest centroid --> recalculate centroids.
+
+It requires a defined distance metric, number of clusters and an initial guess as to cluster centroids.
+
+It produces a final estimate of cluster centroids and an assignment of each point to clusters.
+
+R have an implemented `kmeans()` function.
+
+```{r}
+set.seed(1234)
+x <- rnorm(12,mean = rep(1:3,each = 4), sd = 0.2)
+y <- rnorm(12, mean = rep(c(1,2,1), each = 4), sd = 0.2)
+
+df <- data.frame(x = x, y = y)
+kmeansObj <- kmeans(df, centers = 3)
+names(kmeansObj)
+kmeansObj$cluster
+
+par(mar = rep(0.2,4))
+plot(x,y, col = kmeansObj$cluster, pch = 19, cex = 2)
+points(kmeansObj$centers, col = 1:3, pch = 3, cex = 3, lwd = 3)
+```
+
+## Heatmaps
+
+```{r}
+set.seed(1234)
+dM <- as.matrix(df)[sample(1:12),]
+kmeansObj2 <- kmeans(dM,centers = 3)
+par(mfrow = c(1,2), mar = c(2,4,0.1,0.1))
+image(t(dM)[,nrow(dM):1],yaxt = "n")
+image(t(dM)[,order(kmeansObj$cluster)],yaxt = "n")
+```
+
+Additional comments:
+
+- *K-means* requires a number of clusters (pick by eye/intuition, pick by cross validation or information theory, etc), it is not deterministic (different number of clusters and/or iterations).
+
+## Principal components and Singular Value Decomposition (SVD)
+
+```{r}
+set.seed(12345)
+par(mar = rep(0.2,4))
+dM <- matrix(rnorm(400), nrow = 40)
+image(1:10, 1:40, t(dM)[,nrow(dM):1])
+heatmap(dM)
+```
+
+Data with a pattern
+
+```{r}
+set.seed(678910)
+for(i in 1:40){
+    coinFlip <- rbinom(1,size = 1, prob = 0.5)
+    if(coinFlip){
+        dM[i,] <- dM[i,]+rep(c(0,3), each = 5)
+    }
+}
+```
+
+```{r}
+image(1:10, 1:40, t(dM)[,nrow(dM):1])
+heatmap(dM)
+```
+
+
+Patterns in rows and columns
+
+```{r}
+hh <- hclust(dist(dM))
+dMOrdered <- dM[hh$order,]
+par(mfrow = c(1,3))
+image(t(dMOrdered)[,nrow(dMOrdered):1])
+plot(rowMeans(dMOrdered), 40:1, xlab = "Row Mean", ylab = "Row", pch = 19)
+plot(colMeans(dMOrdered), xlab = "Columns", ylab = "Column Mean", pch = 19)
+```
+
+
+### Related problems
+
+You have a multivariate variables $X_1, ..., X_n$, so $X_1 = \left(x_{11}, ... , X_{1m}\right)$.
+
+- (Statistical goal) Find a new set of multivariate variables that are uncorrelated and explain as much variance as possible.
+- (Data compression) If you put all the variables together in one matrix, find the best matrix created with fewer variables (lower rank) that explains the original data.
+
+
+## Dimension reduction. 
+
+Componentes of the singular value decomposition (SVD)
+
+```{r}
+svd1 <- svd(scale(dMOrdered))
+par(mfrow = c(1,3))
+image(t(dMOrdered)[,nrow(dMOrdered):1])
+plot(svd1$u[,1], 40:1, , xlab = "Row", ylab = "First left singular vector", pch = 19)
+plot(svd1$v[,1], xlab = "Column", ylab = "First right singular vector", pch = 19)
+```
+
+Variance explained 
+
+```{r}
+par(mfrow = c(1,2))
+plot(svd1$d, xlab = "Column", ylab = "Singular vale", pch = 19)
+plot(svd1$d^2/sum(svd1$d^2), xlab = "Column", ylab = "Prop. or variance explained", pch = 19)
+```
+
+Relationship to PCA
+
+```{r}
+svd1 <- svd(scale(dMOrdered))
+pca1 <- prcomp(dMOrdered, scale = TRUE)
+plot(pca1$rotation[,1], svd1$v[,1], pch = 19, xlab = "Principal Component 1", ylab = "Right Singular Vector 1")
+abline(c(0,1))
+```
+
+```{r}
+cM <- dMOrdered*0
+for(i in 1:dim(dMOrdered)[1]){cM[i,] <- rep(c(0,1),each = 5)}
+svd1 <- svd(cM)
+par(mfrow = c(1,3))
+image(t(cM)[,nrow(cM):1])
+plot(svd1$d, xlab = "Column", ylab = "Singular value", pch = 19)
+plot(svd1$d^2/sum(svd1$d^2), xlab = "Column", ylab = "Prop. of variance explained", pch = 19)
+```
+### What if we add a second pattern?
+
+```{r}
+set.seed(678910)
+for(i in 1:40) {
+    coinFlip1 <- rbinom(1, size = 1, prob = 0.5)
+    coinFlip2 <- rbinom(1, size = 1, prob = 0.5)
+    if(coinFlip1){
+        dM[i,] <- dM[i,] + rep(c(0,5), each = 5)
+    }
+    if(coinFlip2){
+        dM[i,] <- dM[i,] + rep(c(0,5),5)
+    }
+}
+hh <- hclust(dist(dM))
+dMOrdered <- dM[hh$order,]
+```
+
+
+
+```{r}
+svd2 <- svd(scale(dMOrdered))
+par(mfrow = c(1,3))
+image(t(dMOrdered)[,nrow(dMOrdered):1])
+plot(rep(c(0,1), each = 5), pch = 19, xlab = "Column", ylab = "Pattern 1")
+plot(rep(c(0,1), 5), pch = 19, xlab = "Column", ylab = "Pattern 2")
+```
+
+```{r}
+svd2 <- svd(scale(dMOrdered))
+par(mfrow = c(1,3))
+image(t(dMOrdered)[,nrow(dMOrdered):1])
+plot(svd2$v[,1], pch = 19, xlab = "Column", ylab = "First right singular vector")
+plot(svd2$v[,2], pch = 19, xlab = "Column", ylab = "Second right singular vector")
+```
+
+```{r}
+svd1 <- svd(scale(dMOrdered))
+par(mfrow = c(1,2))
+plot(svd1$d, xlab = "Column", ylab = "Singular value", pch = 19)
+plot(svd1$d^2/sum(svd1$d^2), xlab = "Column", ylab = "Percent of variance explained", pch = 19)
+```
+
+## Missing values
+
+The package `impute` worked (but is not available for newest versions of R)
+
+```{r}
+dM2 <- dMOrdered
+dM2[sample(1:100,size = 40, replace = FALSE)] <-NA
+## This will not work
+# svd1 <- svd(scale(dM2))
+
+# library(impute)
+# dM2 <- dMOrdered
+# dM2[sample(1:100, size = 40, replace = FALSE)] <-NA
+# dM2 <- impute.knn(dM2)$data
+# svd1 <- svd(scale(dMOrdered))
+# svd2 <- svd(scale(dM2))
+# par(mfrow = c(1,2))
+# plot(svd1$v[,1], pch = 19)
+# plot(svd1$v[,1], pch = 19)
+```
+
+An example using images.
+```{r}
+# if(!require('imager')) {
+#   install.packages('imager')
+#   library('imager')
+# }
+#
+# fpath <- system.file('extdata/Leonardo_Birds.jpg',package='imager')
+# im <- load.image(fpath)
+# plot(im)
+
+#svd1 <- svd(scale(im))
+```
+
+### Plotting and color in R
+
+#### Color utilities in R
+
+- The `grDevices` package has two functions: `colorRamp` and `colorRampPalette`.
+- These functions take palettes of colors and help to interpolate between the colors.
+- The function `colors()` lists the names of colors you can use in any plotting function.
+
+
+```{r}
+pal <- colorRamp(c("red", "blue"))
+pal(0)
+pal(1)
+pal(0.5)
+pal(seq(0,1,len = 10))
+```
+
+```{r}
+pal <- colorRampPalette(c("red","yellow"))
+pal(2)
+pal(10)
+```
+
+There are 3 types of palettes: Sequential, Diverging and Qualitative.
+
+```{r}
+library(RColorBrewer)
+cols <- brewer.pal(3, "BuGn")
+pal<- colorRampPalette(cols)
+image(volcano, col = pal(20))
+```
+
+```{r}
+x <- rnorm(10000)
+y <- rnorm(10000)
+smoothScatter(x,y)
+```
+
+Transparency can be added to the plot:
+
+```{r}
+plot(x,y, pch = 19)
+plot(x,y, col = rgb(0,0,0,0.1), pch = 19)
+```
+
+## Week 4: Case studies
+
+### Samsung Galaxy S3 Data.
+
+Recall the project of Course 3, where we used the Samsung Galaxy S3 data.
+
+```{r}
+library(dplyr)
+
+# Read data.
+features <- read.table(".\\UCI HAR Dataset\\features.txt")
+# View(features)
+train <- read.table(".\\UCI HAR Dataset\\train\\X_train.txt", col.names = features$V2)
+train_labels <- read.table(".\\UCI HAR Dataset\\train\\y_train.txt")
+subject_train <- read.table(".\\UCI HAR Dataset\\train\\subject_train.txt")
+# test <- read.table(".\\UCI HAR Dataset\\test\\X_test.txt", col.names = features$V2)
+# test_labels <-read.table(".\\UCI HAR Dataset\\test\\y_test.txt")
+# subject_test <- read.table(".\\UCI HAR Dataset\\test\\subject_test.txt")
+# subject <- rbind(subject_test, subject_train)
+# NUMBER 1: Merge both datasets
+
+#samsungData <- rbind(train,test)
+samsungData <- train
+
+# Activitieslabels <- rbind(train_labels, test_labels)
+numbercode <- 1:6
+activitylabel <- c("walk", "walkup", "walkdown", "sitting", "standing", "laying")
+for(i in 1:length(numbercode)){
+    train_labels$V1 <- gsub(numbercode[i], activitylabel[i], train_labels$V1)
+}
+samsungData$activity <- train_labels$V1
+samsungData$subject <- subject_train$V1
+```
+
+
+```{r}
+par(mfrow = c(1,2), mar = c(5,4,1,1))
+samsungData <- transform(samsungData, activity = factor(activity))
+sub1 <- subset(samsungData, subject == 1)
+plot(sub1[,1], col = sub1$activity, ylab = names(sub1)[1])
+plot(sub1[,2], col = sub1$activity, ylab = names(sub1)[2])
+legend("bottomright", legend = unique(sub1$activity), col = unique(sub1$activity), pch = 1)
+```
+Clustering based on the average Acceleration
+```{r}
+# Remember to tun myplclust function
+distanceMatrix <- dist(sub1[,1:3])
+hclustering <- hclust(distanceMatrix)
+myplclust(hclustering, lab.col = unclass(sub1$activity))
+```
+
+```{r}
+par(mfrow = c(1,2))
+plot(sub1[,10], pch = 19, col = sub1$activity, ylab = names(sub1)[10])
+plot(sub1[,11], pch = 19, col = sub1$activity, ylab = names(sub1)[10])
+```
+
+Clustering based on maximum acceleration
+
+```{r}
+distanceMatrix <- dist(sub1[,10:12])
+hclustering <- hclust(distanceMatrix)
+myplclust(hclustering, lab.col = unclass(sub1$activity))
+```
+
+Singular Value Decomposition
+
+```{r}
+svd1 <- svd(scale(sub1[,-c(562,563)]))
+par(mfrow = c(1,2))
+plot(svd1$u[,1], col = sub1$activity, pch = 19)
+plot(svd1$u[,2], col = sub1$activity, pch = 19)
+```
+
+
+```{r}
+plot(svd1$v[,2], pch = 19)
+```
+New clustering with maximum contributer
+```{r}
+maxContrib <- which.max(svd1$v[,2])
+distanceMatrix <- dist(sub1[,c(10:12,maxContrib)])
+hclustering <- hclust(distanceMatrix)
+myplclust(hclustering, lab.col = unclass(sub1$activity))
+
+names(samsungData)[maxContrib]
+```
+
+K-means clustering
+
+```{r}
+kClust <- kmeans(sub1[,-c(562,563)], centers = 6)
+table(kClust$cluster, sub1$activity)
+```
+
+```{r}
+kClust <- kmeans(sub1[,-c(562,563)], centers = 6, nstart = 1)
+table(kClust$cluster, sub1$activity)
+```
+
+```{r}
+kClust <- kmeans(sub1[,-c(562,563)], centers = 6, nstart = 100)
+table(kClust$cluster, sub1$activity)
+```
+Cluster 1 Variable Centers (Walkdown)
+
+```{r}
+plot(kClust$center[1,1:10], pch = 19, ylab = "Cluster Center", xlab = "")
+```
+Cluster 4 Variable Centers (Laying)
+```{r}
+plot(kClust$center[4,1:10], pch = 19, ylab = "Cluster Center", xlab = "")
+```
+
+### Air Pollution Case Study
+
+```{r}
+pm0 <- read.table(".\\pm25_data\\RD_501_88101_1999-0.txt", comment.char = "#", header = FALSE, sep = "|", na.strings = "")
+dim(pm0)
+
+head(pm0)
+
+cnames <- readLines(".\\pm25_data\\RD_501_88101_1999-0.txt",1)
+cnames <- strsplit(cnames, "|", fixed = TRUE)
+cnames
+
+names(pm0) <- cnames[[1]]
+head(pm0)
+
+# We want to avoid the white spaces, so we can use make.names instead
+
+names(pm0) <- make.names(cnames[[1]])
+head(pm0)
+
+#Lets take a look at the value of PM2.5
+
+x0 <- pm0$Sample.Value
+class(x0)
+str(x0)
+summary(x0)
+
+# There are several Missing Values. We can check the percentage of missing values
+mean(is.na(x0))
+# Around the 11.25%.
+```
+Are the missing data values a problem?? Well... it depends on the particular question you want to answer.
+
+```{r}
+pm1 <- read.table(".\\pm25_data\\RD_501_88101_2012-0.txt", comment.char = "#", header = FALSE, sep = "|", na.strings = "")
+dim(pm1)
+
+names(pm1) <- make.names(cnames[[1]])
+head(pm1[,1:10])
+x1<- pm1$Sample.Value
+class(x1)
+str(x1)
+summary(x1)
+mean(is.na(x1))
+```
+Let's take a look at the boxplot of both datasets.
+
+```{r}
+boxplot(x0,x1)
+# From here, the only thing we can see is that the data is right skewed.
+
+boxplot(log(x0),log(x1))
+```
+It is something unexpected to have negative values for the mass of PM2.5 particles, (this can be viewed from the summary of x1), so we can check for any negative value in x1.
+
+```{r}
+negative <- which(x1<0)
+length(negative)/length(x1)
+x1[negative]
+
+negative <- x1<0
+sum(negative)
+sum(negative, na.rm = TRUE)
+mean(negative, na.rm = TRUE)
+```
+
+
+```{r}
+dates <- pm1$Date
+str(dates)
+
+dates <- as.Date(as.character(dates), "%Y%m%d")
+str(dates)
+```
+
+```{r}
+hist(x = dates, "month")
+hist(dates[negative], "month")
+```
+
+
+```{r}
+# Calculate the month values for each date
+month_values <- format(dates, "%m")
+
+# Create a histogram with months on the x-axis
+hist(dates, breaks=seq(min(dates), max(dates)+31, by="month"),
+     xlab="Month", main="Histogram of Dates by Month")
+
+# Set the x-axis tick labels to the month names
+axis(side=1, at=seq(min(dates), max(dates)+31, by="month"),
+     labels=format(seq(min(dates), max(dates)+31, by="month"), "%b"))
+```
+
+Exploring change at one monitor
+
+
+```{r}
+site0 <- unique(subset(pm0,State.Code == 36, c(County.Code, Site.ID)))
+site1 <- unique(subset(pm1, State.Code ==36, c(County.Code, Site.ID)))
+head(site0)
+
+site0 <- paste(site0[,1], site0[,2], sep = ".")
+site1 <- paste(site1[,1], site1[,2], sep=".")
+
+str(site0)
+str(site1)
+
+# Search for the intersection of these sets.
+
+
+both <- intersect(site0,site1)
+
+
+# Take a look of how many observations are in each location.
+
+pm0$county.site <- with(pm0, paste(County.Code, Site.ID, sep = "."))
+pm1$county.site <- with(pm1, paste(County.Code, Site.ID, sep = "."))
+
+cnt0 <- subset(pm0, State.Code == 36 & county.site %in% both)
+cnt1 <- subset(pm1, State.Code == 36 & county.site %in% both)
+```
+
+
+Split the data frame
+```{r}
+sapply(split(cnt0, cnt0$county.site),nrow)
+sapply(split(cnt1, cnt1$county.site),nrow)
+```
+
+```{r}
+pm0sub <- subset(pm0, State.Code == 36 & County.Code == 63 & Site.ID == 2008)
+pm1sub <- subset(pm1, State.Code == 36 & County.Code == 63 & Site.ID == 2008)
+
+dim(pm0sub)
+dim(pm1sub)
+```
+Now, we create a time series with these values
+
+```{r}
+dates0 <- as.Date(as.character(pm0sub$Date), "%Y%m%d")
+x0sub <- pm0sub$Sample.Value
+plot(dates0, x0sub)
+dates1 <- as.Date(as.character(pm1sub$Date), "%Y%m%d")
+x1sub <- pm1sub$Sample.Value
+plot(dates1,x1sub)
+```
+Building a panel plot
+```{r}
+par(mfrow = c(1,2), mar = c(4,4,2,1))
+plot(dates0,x0sub, pch = 20)
+abline(h = median(x0sub,na.rm = T))
+plot(dates1, x1sub, pch = 20)
+abline(h = median(x1sub, na.rm = T))
+```
+Now, we change the range in the $y$ axis.
+
+
+```{r}
+rng <- range(x0sub,x1sub, na.rm = T)
+par(mfrow = c(1,2))
+plot(dates0,x0sub, pch = 20, ylim = rng)
+abline(h = median(x0sub, na.rm = T))
+plot(dates1,x1sub, pch = 20, ylim = rng)
+abline(h = median(x1sub, na.rm = T))
+```
+
+Now, we can explore the change at a State Level.
+
+```{r}
+head(pm0)
+table(pm0$State.Code)
+
+mn0 <- with(pm0, tapply(Sample.Value, State.Code, mean, na.rm = T))
+str(mn0)
+summary(mn0)
+
+mn1 <- with(pm1, tapply(Sample.Value, State.Code, mean, na.rm = T))
+str(mn1)
+summary(mn1)
+
+summary(mn0)
+summary(mn1)
+```
+
+```{r}
+d0 <- data.frame(state = names(mn0), mean = mn0)
+d1 <- data.frame(state = names(mn1), mean = mn1)
+
+mrg <- merge(d0,d1, by = "state")
+dim(mrg)
+head(mrg)
+```
+
+```{r}
+par(mfrow = c(1,1))
+rng <- range(mrg[,2], mrg[,3])
+with(mrg, plot(rep(1999,52), mrg[,2], xlim = c(1998, 2013), ylim = rng))
+with(mrg, points(rep(2012,52), mrg[,3]))
+segments(rep(1999,52), mrg[,2], rep(2012,52), mrg[,3])
+```
+
+
+
+
+
+
+
+
+
+
