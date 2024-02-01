@@ -1,0 +1,208 @@
+---
+title: "Statistical Inference Week1"
+author: "JAGV"
+date: "2024-01-30"
+output:
+  html_document: default
+  pdf_document: default
+editor_options: 
+  chunk_output_type: console
+---
+
+# Statistical Inference: Week 1
+
+The goal of statistical inference is "generating conclusions about a population from a noisy sample".
+
+Example: predicting the winner of an election having a sample of likely voters today. Why is the sample noisy? Some people might not vote on election day, some people might change their mind or some people could be deliberately misleading. 
+
+# Probability
+
+Rules for probability (discovered by the Russian Mathematician Kolmogorov):
+
+- assigns a number between 0 and 1
+- so that the probability that **something** occurs is 1 and
+- so that the probability of the union of two sets of outcomes that have nothing in common (mutually exclusive) is the sum of their respective probabilities.
+
+Some rules can be deducted from these rules
+
+If $A$ and $B$ are events:
+
+- $P(A') = 1-P(A)$: The probability that something occurs is 1 minus the probability that the *opposite* occurs. 
+- $P(A \cup B) = P(A) + P(B) - P(A \cap B)$: You can not just add probabilities, especially if there is interactions/interceptions between events.
+
+# Probability mass functions
+
+A **random variable** is a numerical outcome of an experiment. It can be **discrete** or **continuous**. Examples include the outcome of a flip of a coin, the outcome from the roll of a die, the web site traffic on a given day, the BMI of a subject four years after a baseline measurement, the hypertension status of a subject randomly drawn from a population, intelligence quotients for a sample of children, etc.
+
+A **probability mass function** (pmf) evaluated at a value corresponds to the probability that a random variable takes that value. To be a valid pmf function $p$, must satisfy:
+
+- It must always be larger than or equal to $0$.
+- The sum of all possible values that the random variable can take has add up to one.
+
+Bernoulli distribution can be used in cases where only two categories are considered. The probability is denoted by $\theta$ but the problem is that $\theta$ is unknown and hence has to be estimated.
+
+# Probability density function
+
+A **probability density function** (pdf) is a function associated with a continuous random variable. To be a valid pdf, a function must satisfy:
+
+- It must be larger than or equal to zero everywhere.
+- The total area under it must be one.
+
+Areas under pdfs correspond to probabilities for that random variable.
+
+Let's take a look at one example. Is $f(x) = \left\{ \begin{array}{lr} 2x & 0<x<1 \\ 0 & \text{otherwise} \end{array}\right.$ a valid pdf?
+
+```{r}
+x <- c(-0.5,0,1,1,1.5)
+y <- c(0,0,2,0,0)
+plot(x,y,lwd = 3, frame = FALSE, type = "l")
+```
+Yes, as we can see that the function is non-negative everywhere and the area under the curve equals the area of the triangle: $\dfrac{1 \times 2}{2} = 1$.
+
+
+# CDF and survival function.
+
+The **cumulative distribution function** (CDF) of a random variable $\mathbf{X}$, returns the probability that the random variable is less than or equal to the value $x$:
+
+\[
+    F\left(x\right) = P\left(\mathbf{X} \leq x\right)
+\]
+
+whereas the **survival function** of a random variable $\mathbf{X}$ is defined as the probability that the random variable is greater than the value $x$:
+
+\[
+    S\left(x\right) = P\left(\mathbf{X} > x\right) = 1- F\left(x\right)
+\]
+
+In our example:
+
+\[
+    F\left(x\right) = P\left(\mathbf{X} \leq x\right) = \dfrac{1}{2}\times Base \times Height = \dfrac{1}{2}\times x \times 2x = x^2
+\]
+so that 
+
+\[
+    S\left(x\right) = P\left(\mathbf{X} > x\right) = 1- F\left(x\right) = 1-x^2
+\]
+
+# Quantiles
+
+The **$\alpha$-th quantile** of a distribution with distribution function $F$ is the point $x_{\alpha}$ so that $F\left(x_{\alpha}\right) = \alpha$. Note that the **median** is the $50$-th quantile.
+
+
+# Conditional Probability
+
+They are important when **new information** about the outcome is given. In that case, it is defined as
+\[
+    P\left(A \vert B\right) = \dfrac{P\left(A\cap B\right)}{P\left(B\right)}
+\]
+
+
+Thomas Bayes provided a theorem for cases when we want to "reverse" the conditioning:
+
+\[
+    P\left(B \vert A\right) = \dfrac{P\left(A\vert B\right)P\left(B\right)}{P\left(A \vert B\right)P\left(B\right) +  P\left(A \vert B^c\right)P\left(B^c\right)}
+\]
+
+Conditional probability and Bayes Rules in the context of diagnostic tests: Let $+$ and $-$ be the events that the result of a diagnostic test is positive or negative, respectively. Let $D$ and $D^c$ be the events that the subject of the test has or does not have the disease, respectively.
+
+\[
+    Sensitivity = P\left(+ \vert D\right)
+\]
+
+\[
+    Specificity = P\left(- \vert D^c\right)
+\]
+
+Positive predictive value $P\left(D \vert +\right)$, negative predictive value $P\left(D^c \vert -\right)$ and prevalence of the disease $P\left(D\right)$.
+
+
+# Example
+
+Given a test with $sensitivity = 99.7\%$, $specificity = 98.5\%$ and population with a $0.1\%$ prevalence of HIV.
+
+```{r}
+Pos.Pred.Value <- (0.997)*(0.001)/((0.997)*(0.001) + (0.015)*(0.999))
+Pos.Pred.Value
+Neg.Pred.Value <- (0.985)*(0.999)/((0.985)*(0.999) + (0.003)*(0.001))
+Neg.Pred.Value
+```
+The probability of a positive predicted value is $6.23\%$. This probability is so low due to low prevalence of disease (and the modest specificity). The prevalence will change dramatically if you know that the subject was an intravenous drug user and routinely had intercourse with an HIV infected partner which also will increase the positive predictive value (PPV). One way to summarize the evidence without appealing to an often unknowable prevalence can be achieved by using the **diagnostic likelihood ratios**.
+
+# (Diagnostic) Likelihood ratios
+
+Recall that if $p$ is a probability, then $\dfrac{p}{1-p}$ is the odds.
+
+The Diagnostic Likelihood ratios (DLR) summarize the evidence of disease given a positive or negative test. They are defined as:
+
+The **diagnostic likelihood ratio of a positive test**, labeled $DLR_+$ is given by $DLR_+ = \dfrac{P\left(+\vert D\right)}{P\left(+\vert D^c\right)}$ which is $\dfrac{sensitivity}{1-specificity}$
+
+The **diagnostic likelihood ratio of a negative test**, labeled $DLR_-$ is given by $DLR_- = \dfrac{P\left(-\vert D\right)}{P\left(-\vert D^c\right)}$ which is $\dfrac{1-sensitivity}{specificity}$
+
+The $DLRs$ are easy to interpret when we look at the odds ratio. To do so, check that using Bayes Rule in our setting
+\[
+        P\left(D \vert +\right) = \dfrac{P\left(+\vert D\right)P\left(D\right)}{P\left(+ \vert D\right)P\left(D\right) +  P\left(+ \vert D^c\right)P\left(D^c\right)}
+\]
+
+\[
+    P\left(D^c \vert +\right) = \dfrac{P\left(+\vert D^c\right)P\left(D^c\right)}{P\left(+ \vert D\right)P\left(D\right) +  P\left(+ \vert D^c\right)P\left(D^c\right)}
+\]
+
+Therefore, dividing these two equations leads to 
+
+\[
+    \underbrace{\dfrac{P\left(D \vert +\right)}{P\left(D^c \vert +\right)}}_{\text{Odds of disease given a positive test}} = \underbrace{\dfrac{P\left(+\vert D\right)}{P\left(+\vert D^c\right)}}_{\text{Diagnostic LR for a positive test: }DLR_+} \times \underbrace{\dfrac{P\left(D\right)}{P\left(D^c\right)}}_{\text{odds of disease in the absence of a test result}}
+\]
+
+So, the $DLRs$ are the factors by which you multiply your pretest odds to get your post test odds. Thus, if a test has a $DLR_+$ of 6, regardless of the prevalence of disease, the post test odds is six times that of the pretest odds.
+
+
+# Independence
+
+Two events $A$ and $B$ are **independent** if $P\left(A\cap B\right) = P\left(A\right)P\left(B\right)$ where $P\left(B\right)>0$.
+
+Note that independence is usually assumed in the general framework of statistical inference, as the "i.i.d." (independent and identically distributed) random variables are the default model for random samples.
+
+It may be interesting to check cases where people calculate the probability of an intersection as the product of the probabilites **without checking** independence. See [The Sally Case](https://understandinguncertainty.org/node/545)
+
+# Expected values
+
+Expected values are useful for **characterizing populations** and usually represent the first thing that we're interested in estimating.
+
+The **mean** is the characterization of a distribution center whereas **variance** and **standard deviation** from its spread.
+
+$E\left[\mathbf{X}\right]$ represents the center of mass of a collection of locations and weights $\left\{x, p\left(x\right)\right\}$. It balances out the population distribution in the sense that the Mean Squared Error is minimized.
+
+```{r}
+library(manipulate)
+library(ggplot2)
+library(UsingR)
+data(galton)
+myHist <- function(mu){
+    g <- ggplot(galton, aes(x = child))
+    g <- g + geom_histogram(fill = "salmon", binwidth = 1, aes(y = ..density..), colour = "black")
+    g <- g + geom_density(size = 2)
+    g <- g + geom_vline(xintercept = mu, size = 2)
+    mse <- round(mean((galton$child - mu)^2),3)
+    g <- g + labs(title = paste('mu = ',mu,'MSE = ',mse))
+    g
+}
+### Not sure why it is not working
+# manipulate(myHist(mu), mu = slider(62,74, step = 0.5))
+```
+
+Summarizing:
+
+- The **population mean** is the center of mass of population.
+- The **sample mean** is the center of mass of observed data.
+- The **sample mean** is an estimate of the population mean.
+- The sample mean is **unbiased** (the population mean of its distribution is the mean that it is trying to estimate).
+- The more data that goes into the sample mean, the more concentrated its density/mass function is around the population mean.
+
+
+
+
+
+
+
+
