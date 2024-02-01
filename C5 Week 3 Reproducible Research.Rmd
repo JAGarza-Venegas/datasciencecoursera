@@ -1,0 +1,129 @@
+---
+title: "C5 Week 3 Reproducible Research"
+author: "JAGV"
+date: "2023-05-25"
+output: html_document
+---
+
+# Communicating results (specifying levels of detail).
+
+We have to take into account that:
+
+- People are busy, especially managers and leaders.
+- Results of data analyses are sometimes presented in oral form, but often the first cut is presented via e-mail.
+- It is often useful to breakdown the results of an analysis into different levels of granularity/detail.
+
+## Hierarchy of information: e-mail presentation.
+
+Some suggestions:
+
+**About subject line**:
+
+- Include one line (at least). 
+- Summarize findings in one sentence.
+
+**About the e-mail body**
+
+- A brief description of the problem (context), recall what was proposed and executed; summarize findings (results). Between 1-2 paragraphs.
+- Suggest some options (as concrete as possible) when action needs to be taken.
+- If questions are required, make them yes/no questions.
+
+**About attachment(s)**
+
+- R MarkDown file.
+- knitr report.
+- Stay concise.
+
+**Links to Supplementary Materials**
+
+- Code.
+- GitHub repository.
+
+# RPubs
+
+Website for publish RMarkdown documents made in RStudio. It is free and it is public. [RPubs](www.rpubs.com)
+
+# Reproducible Research Checklist (suggestions)
+
+## **Do**: start with good science
+
+- Garbage in, garbage out. (GIGO)
+- Coherent, focused question simplifies many problems.
+- Working with good collaborators reinforces good practices.
+- Something that is interesting to you will (hopefully) motivate good habits.
+
+## **Do not**: do things by hand
+
+- Editing spreadsheets of data to "clean it up" (remove outliers, QA/QC, validation).
+- Editing tables of figures.
+- Downloading data from a web site (clicking links in a web browser).
+- Moving data around your computer; splitting or reformatting data files.
+- "We are just going to do this once..."
+
+Things done by hand need to be precisely documented, and this is harder than it sounds.
+
+## **Do not**: point and click
+
+- Many data processing/statistical analysis packages have GUIs (Graphical User Interfaces) which are convenient or intuitive **but** the actions you take with a GUI can be difficult to others to reproduce.
+- In general, be careful with data analysis software that is highly *interactive*, ease of use can sometimes lead to non-reproducible analyses.
+- Text editors are usually fine.
+
+
+## **Do**: Teach a computer
+
+- In order to guarantee reproducibility, you should teach a computer to do the things that are part of your analysis: for example, download and save files from the web.
+- This works because computers need precise instructions and you must avoid fuzzyness to do that. 
+
+## **Do**: Use some version control
+
+- Try to make changes in small chunks instead of just one massive commit.
+- Track your progress by using tags and revert to old versions.
+- GitHub can make it easy to publish results as well as BitBucket and SourceForge.
+
+## **Do**: Keep track of your software environment
+
+- Computer architecture (CPU [Intel, AMD, ARM], GPU)
+- OS (Windows, Mac OS, Linux/Unix)
+- Software toolchain: Compilers, interpreters, command shell programming languages, database backends, etc.
+- Supporting software/infrastructure: Libraries, R Packages, dependencies
+- External dependencies: Web sites, data repositories, remote databases, software repositories
+- Version numbers
+
+```{r}
+sessionInfo()
+```
+## **Do not**: save output
+
+- Avoid saving data analysis output (tables, figures, summaries, processed data, etc), except perhaps temporarily for efficiency purposes.
+- Instead of saving the output, save the data and code that generated that output.
+- Intermediate files are okay as long as there is clear documentation for them.
+- Remember: if an output file cannot be easily connected with the means by which it was created, then it is not reproducible.
+
+## **Do**: set your seed and think about the entire pipeline
+
+- Setting the seed allows any random number generation to be exactly reproducible.
+- Data analysis is a lengthy process, not just tables/figures/reports.
+- Raw data --> processed data --> analysis --> report
+- The more of the data analysis pipeline you can make reproducible, the better for everyone.
+
+
+# Evidence-based data analysis
+
+First, some ideas around ***replication*** and ***reproducibility***: **replication** focuses on the validity of the scientific claim (and it is the ultimate standard for strengthening scientific evidence) whereas **reproducibility** focuses in the validity of the data analysis (and it is a minimum standard for any scientific study and is important when replication is impossible).
+
+
+When ***reproducibility*** is ensured, we get transparency, data and software/methods availability and an improved transfer of knowledge. **Nevertheless,** the correctness of the analysis or validation is not ensured.
+
+
+When a original investigator says *"The truth is A"*, *possible* reproducers are
+
+- General public: they say *"I don't care"*.
+- Scientists: they contrast your hypothesis: *"The truth is A or the truth is B"*.
+- Other group of people: they say *"The truth is not A"* (the opposite of what are you saying).
+
+
+
+
+
+
+

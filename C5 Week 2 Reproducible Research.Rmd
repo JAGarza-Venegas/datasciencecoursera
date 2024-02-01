@@ -1,0 +1,150 @@
+---
+title: "Reproducible Research Week 2"
+author: "JAGV"
+date: "2023-04-19"
+output: html_document
+---
+
+## Setting global options
+
+```{r setoptions, echo = FALSE}
+## knitr::opts_chunk$set(echo = TRUE, results = "hide")
+```
+
+
+# Coding Standars for R
+
+1. Always use text files/text editor.
+2. Indent your code.
+    + Indenting improves readability.
+    + Fixing line length (80 columns) prevents lots of nesting and very long functions.
+    + Suggested: Indents of 4 spaces at minimum; 8 spaces ideal.
+3. Limit the width of your code (80 columns?)
+4. Limit the length of individual functions.
+
+# Markdown
+
+Markdown is a text-to-HTML conversion tool for web writers. Markdown allows you to write using an easy-to-read, easy-to-write plain text format, then convert it to structurally valid XHTML (or HTML).
+
+Some examples include:
+
+- Italics: *This text will appear italicized!*
+- Bolds: **This one will appear in bold font**
+- Headers: Each $#$ sign will indicate a header.
+- Links: $[text](url)$ --> [RStudio](http://rstudio.com/)
+
+#### Advanced linking
+
+There is an example of advanced linking. The page with several R apps [The Art of Stat][1] or the page with [a data set on Pokémons][2]
+
+[1]: https://artofstat.com/web-apps
+[2]: https://www.kaggle.com/datasets/abcsds/pokemon
+
+# R Markdown
+
+R Markdown can be converted to standard markdown using the `knitr` package in R, and can be converted to HTML using the `markdown` package in R.
+
+
+Bonus: slides can be created in R Markdown and converted to slides using the `slidify` package!
+
+# R Markdown demonstration
+
+
+```{r}
+library(datasets)
+data(airquality)
+summary(airquality)
+```
+
+Let's make a pairs plot of the data.
+
+```{r}
+pairs(airquality)
+```
+Here's a regression model of Ozone on Winf, Solar radiation, and temperature.
+
+```{r}
+library(stats)
+fit <- lm(Ozone ~ Wind + Solar.R + Temp, data = airquality)
+summary(fit)
+```
+
+# Literate Statistical Programming with knitr
+
+How do I make my work reproducible?
+
+- Decide to do it (ideally from the start)
+- Keep track of things, perhaps with a version control system to track snapshots/changes
+- Use software whose operation can be coded.
+- Do not save output.
+- Save data in non-proprietary formats.
+
+Some pros and cons of literate programming.
+
+Pros:
+
+- Text and code all in one place, logical order.
+- Data, results automatically updated to reflect external changes.
+- Code is live --  automatic "regression test" when building a document.
+
+
+Cons:
+
+- Text and code all in one place, can make documents difficult to read, especially if there is a **lot** of code.
+- Can substantially slow down processing of documents (although there are tools to help).
+
+## In-line text computations
+
+```{r date, echo = FALSE}
+time <- format(Sys.time(), "%a %b %d %X %Y")
+rand <- rnorm(1)
+```
+
+The current time is `r time` and a normal standard random number is `r rand`.
+
+## Incorportating graphics
+
+Let's first simulate some data.
+```{r simdata, echo = TRUE}
+x <- rnorm(100)
+y <- x + rnorm(100,sd=0.5)
+```
+
+Here is a scatterplot of the data.
+
+```{r scatterplot, fig.height = 4}
+par(mar=c(5,4,1,1),las = 1)
+plot(x,y,main = "My Simulated Data")
+```
+
+## Making tables with xtable
+
+```{r fitmodel}
+library(datasets)
+data(airquality)
+fit <- lm(Ozone ~ Wind + Temp + Solar.R, data = airquality)
+```
+
+Now, here you have a table with the regression coefficients
+
+```{r showtable, results = "asis"}
+if(!require("xtable")) install.packages("xtable")
+library(xtable)
+xt <- xtable(summary(fit))
+print(xt,type = "html")
+```
+
+## Caching computations
+
+One chunk may take a long time to run, and as all chunks have to be re-computed every time we re-knit the file, then the `cache = TRUE` option can be set in order to store results of computation. After the first run, results are loaded from cache.
+
+Warning! Chunks with significant *side effects* may not be cacheable.
+
+## Summarizing
+
+To sum all up, **literate statistical programming** can be a useful way to put, text, code, data, output all in one document, and `knitr` is a powerful tool for integrating code and text in a simple document format.
+
+
+
+
+
