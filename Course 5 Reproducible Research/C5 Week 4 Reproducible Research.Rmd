@@ -1,0 +1,65 @@
+---
+title: "C5 Week 4 Reproducible Research"
+author: "JAGV"
+date: "2023-05-29"
+output: html_document
+---
+
+# Caching computations
+
+```{r}
+library(datasets)
+library(stats)
+
+data("airquality")
+
+fit <- lm(Ozone ~ Wind + Temp + Solar.R, data = airquality)
+summary(fit)
+
+par(mfrow = c(2,2))
+plot(fit)
+```
+Using `cacher` as a reader (it was removed from the CRAN repository). This package was used to create cache packages from data anlyses for distribution.
+
+```{r}
+# library(cacher)
+# clonecache(id = "092dcc7dda4b93e42f23e038a601d44dbec7b3f")
+# clonecache(id = "092d")
+# 
+# 
+# showfiles()
+```
+
+# Case Study: Air pollution
+
+Particular matters (PM) is composed of many different chemical elements. Some components of PM may be more harmful than others, and some sources of PM may be more dangerous than others. The identification of the harmful chemicals constituents my lead us to strategies for controlling sources of PM.
+
+# Case study: High throughput biology
+
+Check these links about the **Duke cancer scandal** from  [Science.org](https://www.science.org/content/blog-post/duke-potti-scandal-inside) and [Anil Potti Wikipedia's page](https://en.wikipedia.org/wiki/Anil_Potti)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

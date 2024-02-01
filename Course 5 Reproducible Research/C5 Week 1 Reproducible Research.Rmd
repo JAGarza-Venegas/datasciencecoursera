@@ -1,0 +1,263 @@
+---
+title: "Reproducible Research Week 1"
+author: "JAGV"
+date: "2023-04-07"
+output: html_document
+---
+
+# Introduction.
+
+It is necessary to communicate to others our research. That is why the research must be reproducible, and it has to be communicated in a way other researches can understand our work.
+
+# Concepts and ideas.
+
+The **replication** of the research is mandatory, as it helps to strengthen scientific evidence and also because it may impact policies and/or regulatory decisions. However, some studies cannot be replicated (because of lack of money, time or is a unique situation). Between replication and nothing stands the **reproducibility** of the research. 
+
+Why do we need reproducible research?
+
+- New technologies increases data collection; data are more complex and extremely high dimensional.
+- "Megadatabases" can be obtained by merging existing databases.
+- More sophisticated analyses are allowed since computing power is greatly increased.
+- For every field $X$, there is a field "Computational $X$".
+
+Example: Statistical Process Monitoring.
+
+- Develop techniques or methods to address manufacturing (and other areas) problems related to quality control is necessary. 
+- Results obtained here can be used for in 4.0 Industry, where thousands of data can be generated in small time intervals. Wrong analyses can lead to losses of thousands of dollars.
+- Complex statistical methods (autocorrelation, time series, multivariate), are needed and subjected to intense scrutinity.
+
+Some comments of the Institute of Medicine:
+
+- Data or metadata used to develop test should be made publicly available.
+- The computer code and fully specified computational procedures used for development of the candidate omics-based test should be sustainably available.
+- "Ideally, the computer code that is released will encompass all of the steps of computational analysis, including all data preprocessing steps, that have been described in this chapter. All aspects of the analysis need to be transparently reported". 
+
+## Literate (Statistical) Programming
+
+An article is a stream of **text** and **code**. The analysis code is divided into text and code *chunks* (each one loads data and computes results). After that, presentation code formats results (e.g. tables, figures, etc.); and the article explains what is going on. 
+
+Literate programs can be **weaved** to produce human-readable documents and **tangled** to produce machine-readable documents. Then, literate programming is a general concept that requires:
+
++ A documentation language (human-readable).
++ A programmming language (machine-readable).
+
+`Sweave`, which was developed by Friedrich Leisch, uses $\LaTeX$ and `R` as the documentation and programming languages, respectively. However, `knitr` is a more recent alternative package. 
+
+`knitr`, which was developed by Yihui Xie while a graduate student in statistics at Iowa State, uses `R` as the programming language (although others are allowed) and variety of documentation languages (such as, $\LaTeX$, Markdown, HTML).
+
+## Structure of a Data Analysis.
+
+### Steps in a data analysis.
+
+- Define the question.
+- Define the ideal data set.
+- Determine what data you can access.
+- Obtain the data.
+- Clean the data.
+
+### Define the ideal data set.
+
+- **Descriptive** - a whole population.
+- **Exploratory** - a random sample with many variables measured.
+- **Inferential** - the right population, randomly sampled.
+- **Predictive** - a training and test data set from the same population.
+- **Causal** - data from a randomized study.
+- **Mechanistic** - data about all components of the system.
+
+### Determine what data you can access
+
+- Sometimes you can find data free on the web.
+- Other times you may need to buy the data.
+- Be sure to respect the terms of use.
+- If data do not exist, you may need to generate it yourself.
+
+### Obtain the data.
+- Try to obtain the raw data.
+- Be sure to reference the source.
+- Polite e-mails go a long way.
+- If you will load the data from an internet source, record the url and time accessed.
+
+### Clean the data.
+- Raw data often needs to be processed.
+- If it is pre-processed, make sure you understand how.
+- Understand the source of the data (census, sample, convenience sample, etc.).
+- May need reformating, subsampling - record these steps.
+- Determine if the data are good enough - if not, quit or change data.
+
+```{r}
+if(!require("kernlab")) install.packages("kernlab")
+library(kernlab)
+
+data(spam)
+str(spam)
+str(spam[,1:5])
+```
+
+### Exploratory data analysis.
+
+```{r}
+if(!require("kernlab")) install.packages("kernlab")
+library(kernlab)
+data(spam)
+
+set.seed(3435)
+
+## Split the data set using binomial function.
+trainIndicator = rbinom(4601, size = 1, prob = 0.5)
+table(trainIndicator)
+## Subsetting the data.
+trainSpam = spam[trainIndicator==1,]
+testSpam = spam[trainIndicator==0,]
+```
+
+```{r}
+names(trainSpam)
+head(trainSpam)
+
+table(trainSpam$type)
+```
+
+```{r}
+plot(trainSpam$capitalAve ~ trainSpam$type)
+plot(log10(trainSpam$capitalAve+1) ~ trainSpam$type)
+```
+```{r}
+plot(log10(trainSpam[,1:4] + 1))
+```
+
+```{r}
+hCluster <- hclust(dist(t(trainSpam[,1:55])))
+plot(hCluster)
+
+## Log10 transformation
+
+hClusterUpdated <- hclust(dist(t(log10(trainSpam[,1:55]+1))))
+plot(hClusterUpdated)
+
+```
+
+### Statistical prediction/modeling
+
+- Measures of uncertainty should be reported.
+- Transformations/processing should be accounted for when necessary.
+
+```{r warning=FALSE}
+trainSpam$numType <- as.numeric(trainSpam$type) -1
+costFunction <- function(x,y) sum(x!=(y>0.5))
+cvError = rep(NA,55)
+library(boot)
+for (i in 1:55) {
+    lmFormula <- reformulate(names(trainSpam)[i], response = "numType")
+    glmFit <- glm(lmFormula, family = "binomial", data = trainSpam)
+    cvError[i] <- cv.glm(trainSpam, glmFit, costFunction, 2)$delta[2]
+}
+## Which predictor has minimum cross-validated error?
+names(trainSpam)[which.min(cvError)]
+```
+
+```{r}
+## Use the best model from the group
+predictionModel <- glm(numType ~ charDollar, family = "binomial", data = trainSpam)
+## Get predictions on the test set
+predictionTest <- predict(predictionModel, testSpam)
+predictedSpam <- rep("nonspam", dim(testSpam)[1])
+## Classify as `spam`for those with probability > 0.5
+predictedSpam[predictionModel$fitted > 0.5] <- "spam"
+```
+
+
+```{r}
+table(predictedSpam, testSpam$type)
+
+## Error rate
+ER <- (61+458)/(1346+458+61+449)
+ER
+```
+### Interpret results
+
+- Use the appropriate language: "describes", "correlates with/associated with", "leads to/causes", "predicts".
+- Give an explanation.
+- Interpret coefficients.
+- Interpret measures of uncertainty.
+
+### Challenge results
+
+- Challenge all steps: Question, Data source, Processing, Analysis, Conclusions.
+- Challenge measures of uncertainty.
+- Challenge choices of terms to include in models.
+- Think of potential alternative analysis.
+
+### Synthetize/write-up results
+
+- Lead with the question.
+- Summarize the analyses into the story.
+- Do not include every analysis, include it if it is needed for the story or if it is needed to address a challenge.
+- Order analyses according to the story, rather than chronologically.
+- Include "pretty" figures that contribute to the story.
+
+
+## Data analysis files
+
+- Data
+    - Raw data
+        - Should be stored in your analysis folder.
+        - If accessed from the web, include url, description, and date accessed in README
+    - Processed data
+        - Should be named so it is easy to see which script generated the data.
+        - The processing script - processed data mapping should occur in the README.
+        - Processed data should be tidy.
+- Figures
+    - Exploratory figures
+        - Figures made during the course of your analysis, not necessarily part of your final report.
+        - They do not need to be "pretty".
+    - Final figures
+        - Usually a small subset of the original figures.
+        - Axes/colors set to make the figure clear.
+        - They need to be "pretty"
+- R code
+    - Raw/unused scripts
+        - May be less commented (but comments help you!).
+        - May be multiple versions.
+        - May include analyses that are later discarded.
+    - Final scripts
+        - Clearly commented (small comments liberally - what, when, why, how, bigger commented blocks for whole sections).
+        - Include processing details.
+        - Only analyses that appear in the final write-up.
+    - R Markdown files
+        - R Markdown files can be used to generate reproducible reports.
+        - Text and R code are integrated.
+        - Very easy to create in RStudio.
+- Text
+    - README files
+        - Not necessary if you use R Markdown
+        - Should contain step-by-step instructions for analysis.
+    - Text of analysis/report
+        - It should include a title, introduction (motivation), methods (statistics you used), results (including measures of uncertainty), and conclusions (including potential problems).
+        - It should tell a story.
+        - It should not include every analysis you performed.
+        - References should be included for statistical methods.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
