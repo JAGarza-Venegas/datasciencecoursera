@@ -1,0 +1,311 @@
+---
+title: "Statistical Inference Week2"
+author: "JAGV"
+date: "2024-01-30"
+output:
+  html_document: default
+  pdf_document: default
+editor_options: 
+  chunk_output_type: console
+---
+
+# Statistical Inference: Week 2
+
+# Variability
+
+The estimators for the population mean and variance ($\mu$ and $\sigma^2$) are the sample mean and variance ($\bar{X}$ and $S^2$). These quantities have a sampling distribution which has the following properties: 
+
+- The mean of the of the $\bar{X}$ distribution is $\mu$.
+- The variance of the $\bar{X}$ distribution is $\dfrac{\sigma^2}{n}$ where $n$ is the sample size.
+- The mean of the $S^2$ distribution es $\sigma^2$.
+
+The quantity $\dfrac{\sigma^2}{n}$ has a "natural" estimaor $\dfrac{S}{\sqrt{n}}$ so that the quantity $\dfrac{S}{\sqrt{n}}$ is called **the standard error of the mean** and it measures how variable averages of random samples of size $n$ from the population are.
+
+```{r}
+sim <- 100000
+n <- 5
+sd(apply(matrix(rnorm(sim*n),sim),1,mean))
+1/sqrt(n)
+```
+
+```{r}
+library(UsingR)
+data(father.son)
+x <-father.son$sheight
+n <-length(x)
+hist(x)
+```
+
+
+# Distributions
+
+Some common distributions
+
+## Binomial distribution
+
+The **Bernoulli distribution** arises as the result of a binary outcome. Bernoulli random variables take (only) the values 1 and 0 with probabilities of $p$ and $1-p$, respectively.
+
+The pmf is
+\[
+    P\left(\mathbf{X} = x\right) = p^x\left(1-p\right)^{1-x}
+\]
+
+with mean $E\left[\mathbf{X}\right] = p$ and $Var\left[\mathbf{X}\right] = p\left(1-p\right)$.
+
+The **Binomial distribution** is obtained as the sum of $n$ iid Binomial random variables.
+
+The pmf is
+
+\[
+    P\left(\mathbf{X} = x\right) = {n \choose x} p^x\left(1-p\right)^{1-x}
+\]
+
+where $\displaystyle {n \choose x} = \dfrac{n!}{x!\left(n-x\right)!}$
+
+
+## Normal distribution
+
+The **normal distribution** has a pdf given by
+
+\[
+    f\left(x\right) = \dfrac{1}{\sqrt{2\pi}}e^{-\dfrac{\left(x-\mu\right)^2}{2\sigma^2}}
+\]
+
+and the mean and variance are $\mu$ and $\sigma^2$. When $\mu = 0$ and $\sigma^2 = 1$, it is called the **standard normal distribution** and the pdf is reduced to
+
+\[
+    f\left(x\right) = \dfrac{1}{\sqrt{2\pi}}e^{-\dfrac{x^2}{2}}
+\]
+
+
+## Poisson distribution
+
+The **Poisson distribution** is used to model counts. 
+
+The pmf is given by
+
+\[
+    P\left(\mathbf{X} = x\right) = \dfrac{\lambda^x e^{-\lambda}}{x!}
+\]
+where $x = 0,1,\dots$. It has mean and variance $\lambda$. It arises when
+
+- modeling count data
+- modeling event-time or survival data
+- modeling contingency tables
+- approximating binomials when $n$ is large and $p$ is small
+- Poisson random variables are used to model rates: $\mathbf{X} \sim Poisson\left(\lambda t\right)$ where $\lambda = E\left[\mathbf{X}/t\right]$ is the expected count per time unit and $t$ is the total time monitoring
+
+
+# Asymptotics
+
+**Asymptotics** is the term for the behavior of statistics as the sample size (or some other relevant quantity) limits to infinity (or some other relevant number).
+
+We may consider the limits of random variables which results allow us to talk about the *large* sample distribution of sample means of *iid* observations.
+
+The first of these results, the **Law of Large Numbers**, we intituively know
+
+- It says that the average limits to what it is estimating, the population mean. For **example** $\bar{\mathbf{X}_{n}}$ could be the average of the result of $n$ coin flips (i.e the sample proportion of heads). As we flip a fair coin over and over, it eventually converges to the true probability of a head.
+
+```{r}
+n<-1000
+means <- cumsum(sample(0:1, n, replace = TRUE))/(1:n)
+plot(1:n, means, type = "l", lwd = 3, main = "Simulated Coin Flips")
+abline(h = 0.5, lwd = 2, col = "red")
+```
+
+
+```{r}
+n <- 1000
+means <- cumsum(rnorm(n))/(1:n)
+plot(1:n,means, type = "l", lwd = 3, main = "Simulated random normal variables")
+abline(h = 0, lwd = 2, col = "red")
+```
+
+We define an estimator to be **consistent** if it converges to what you want to estimate. The LLN says that the sample mean of iid samples is consistent to the population mean. The sample variance and sample standard deviation are consistent as well.
+
+
+## The central limit theorem
+
+The **Central Limit Theorem** states that the distribution of averages of $i.i.d.$ random variables (properly normalized) becomes that of a standard normal as the sample size increases.
+
+\[
+    \dfrac{\bar{\mathbf{X}}_n - \mu}{\sigma/\sqrt{n}} = \dfrac{\text{Estimate  -  Mean of Estimate}}{\text{Std.Err. of estimate}}
+\]
+
+The useful way to think about the CLT is that $\bar{\mathbf{X}}_n \sim N\left(\mu,\sigma^2/n\right)$ approximately.
+
+## Example (simulation of the CLT)
+
+- Simulate a standard normal random variable by rolling $n$ (six sided) dice. 
+- $X_i$ will be the outcome for die $i$
+- Then note that $\mu = E\left[X_i\right] = 3.5$ and $Var\left[X_i\right] = 2.92$. Therefore, the standard error is $SE = \sqrt{2.92/n} = 1.71/\sqrt{n}$.
+- Lets roll $n$ dice, take their mean, substract off 3.5 and divide by $1.71/\sqrt(n)$.
+
+```{r}
+sim <- 10000
+n<- 30
+means <- (apply(matrix(sample(1:6,size = n*sim, replace = TRUE),sim),1,mean)-3.5)/(1.71/sqrt(n)) 
+hist(means, main = paste("Number of rolls = ",n), xlab = "")
+```
+
+## Example (simulation with a Coin Flips)
+
+- Simulate a Bernoulli random variable with probability of heads = $p$ (may be an unfair coin)
+- The **sample proportion** $\hat{p}$ is the average of the coin flips
+- Then note that $\mu = E\left[X_i\right] = p$ and $Var\left[X_i\right] = p\left(1-p\right)$. Therefore, the standard error of the mean is $SE = \sqrt{p\left(1-p\right)/n}$
+- Lets flip $n$ unfair coins, take their mean, substract off $p$ and divide by $p\left(1-p\right)/\sqrt(n)$
+
+```{r}
+n <- 30
+sim <- 10000
+p <- 0.9
+means <- (apply(matrix(rbinom(sim*n,size = 1, prob = p),sim),1,mean) - p)/(sqrt(p*(1-p)/n)) 
+hist(means, main = paste("Coin flips = ", n))
+```
+
+Take into account that TLC does not guarantee that you will have the standard distribution.
+
+
+## Confidence intervals
+
+```{r}
+library(UsingR)
+data(father.son)
+x <-father.son$sheight
+CI_inches <- mean(x) + c(-1,1)*qnorm(0.975)*sd(x)/(sqrt(length(x)))
+CI_feet <- (mean(x) + c(-1,1)*qnorm(0.975)*sd(x)/(sqrt(length(x))))/12
+CI_inches
+CI_feet
+```
+
+### Sample proportions
+
+In the event that each $\mathbf{X}_i$ is $0$ or $1$ with common success probability $p$ and then $\sigma^2 = p\left(1-p\right)$. The interval takes the form
+
+\[
+    \hat{p} \pm z_{1-\alpha/2}\sqrt{\dfrac{p\left(1-p\right)}{n}}
+\]
+
+Replacing $p$ with $\hat{p}$ in the standard error results in what is called a Wald confidence interval for $p$. In the case of $95\%$ intervals 
+
+\[
+    \hat{p} \pm \dfrac{1}{\sqrt{n}}    
+\]
+is a quick CI estimate for $\hat{p}$. (Only 95\% CI intervals because the quantile is $\approx 2$).
+
+
+### Binomial interval
+
+Your campaign advisor told you that in a random sample of 100 likely voters, 56 intent to vote for you. 
+
+- Can you relax? Do you have this race in the bag?
+- Without access to a computer or calculator, how precise is this estimate?
+
+By computing the quick $95\%$ CI for the proportion, we know that $1/\sqrt{100} = 0.1$, so that the approximate $95\%$ CI is  $\left(0.46,0.66\right)$. *Conclusion:* Statistically is not enough!
+
+Now, we can calculate the CI for the binomial experiment using the normal approximation: 
+
+
+```{r}
+BCI <- 0.56 + c(-1,1)*qnorm(0.975)*sqrt(0.56*0.44/100)
+BCI
+```
+
+The routine in R is
+
+```{r}
+binom.test(56,100)$conf.int
+```
+
+
+Now, a beautiful simulation
+
+```{r}
+n <- 100
+pvals <- seq(0.1,0.9,by = 0.05)
+nosim <- 1000
+coverage <- sapply(pvals, function(p){
+    phats <- rbinom(nosim,prob = p, size = n)/n
+    ll <- phats - qnorm(0.975)*sqrt(phats*(1-phats)/n)
+    ul <- phats + qnorm(0.975)*sqrt(phats*(1-phats)/n)
+    mean(ll < p & ul > p)
+})
+
+plot(pvals,coverage, main = "Coverage", type = "l", lwd = 3, ylim = c(0.8,1))
+abline(h = 0.95, lwd = 2, col = "red")
+```
+
+What's happening?
+
+$n$ is not large enough for the CLT to be applicable for many values of $p$. A quick fix is to form the **Agresti/Coull interval** with 
+
+\[
+    \dfrac{\mathbf{X}+2}{n+4}
+\]
+which comes from adding two successes and two failures.
+
+
+```{r}
+n <- 20
+pvals <- seq(0.1,0.9,by = 0.05)
+nosim <- 1000
+coverage <- sapply(pvals, function(p){
+    phats <- (rbinom(nosim,prob = p, size = n)+2)/(n+4)
+    ll <- phats - qnorm(0.975)*sqrt(phats*(1-phats)/n)
+    ul <- phats + qnorm(0.975)*sqrt(phats*(1-phats)/n)
+    mean(ll < p & ul > p)
+})
+
+plot(pvals,coverage, main = "Coverage: Agresti/Coull interval", type = "l", lwd = 3, ylim = c(0.8,1))
+abline(h = 0.95, lwd = 2, col = "red")
+```
+
+This is a conservative interval. Recall that having a larger coverage rate is not necessarily a good thing as it implies that the interval is probably too wide. 
+
+### Poisson interval
+
+
+We will design a Poisson confidence interval based on the idea of
+
+\[
+    \text{Estimate}\pm z_{\text{quantile}}\text{SE}_{est}
+\]
+
+A nuclear pump failed 5 times out of 94.32 days. Give a $95\%$ CI for the failure rate per day.
+
+First, we will assume that $X \sim Poisson\left(\lambda t\right)$. Then, $\hat\lambda = X/t$ and $Var\left(\hat{\lambda}\right) = \lambda/t$. Therefore $\hat\lambda/t$ is our variance estimate.
+
+```{r}
+x <- 5
+t <- 94.32
+lambda <- x/t
+round(lambda + c(-1,1)*qnorm(0.975)*sqrt(lambda/t),3)
+```
+
+The exact Poisson interval is
+
+```{r}
+poisson.test(x, T = 94.32)$conf
+```
+
+
+Simulating the Poisson coverage
+
+```{r}
+lambdavals <- seq(0.005,0.1, by = 0.01)
+nosim <- 1000
+t <-100
+coverage <- sapply(lambdavals, function(lambda){
+    lhats <- rpois(nosim, lambda = lambda*t)/t
+    ll <- lhats - qnorm(0.975)*sqrt(lhats/t)
+    ul <- lhats + qnorm(0.975)*sqrt(lhats/t)
+    mean(ll < lambda & ul > lambda)
+})
+plot(lambdavals, coverage, main ="Coverage for Poisson IC", type = "l", lwd = 3)
+abline(h = 0.95, col = "red", lwd = 2)
+```
+
+First idea: do not use the asymptotic distribution for small values of $\lambda$, as the coverage is around $50\%$
+
+
+
