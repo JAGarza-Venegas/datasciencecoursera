@@ -1,0 +1,456 @@
+---
+title: "C7 Week 2"
+author: "JAGV"
+date: "2024-05-29"
+output: html_document
+---
+
+# **Statistical** linear regression models
+
+Up to this point, we have only considered estimation. Estimation is useful, but we also need to know how to extend our estimates to a population. This is the process of statistical inference. Our approach to statistical inference will be through a statistical model. At the bare minimum, we need a few distributional assumptions on the errors. However, we will focus on full model assumptions under Gaussianity.
+
+## Interpreting coefficients
+
+$\beta_0$ is the expected value of the response when the predictor is zero. However, this is not always of interest for example when $X = 0$ is impossible or far outside of the range of data. (Blood pressure, height, age). 
+
+*Note:* when the $x$ variable is centered at its mean ($x_i - \bar{X}$), the intercept is interpreted as the expected response as the average $X$ value.
+
+$\beta_1$ is the expected change in response for a $1$ unit of change in the predictor.
+
+## Linear regression for prediction
+
+Let's take a look at one example
+
+```{r}
+library(UsingR)
+data(diamond)
+# #library(ggplot2)
+# g <- ggplot(diamond, aes(x= carat, y = price))
+# g <- g + xlab("Mass (carats)")
+# g <- g + ylab("Price (SIN $)")
+# g <- g + geom_point(size = 6, colour = "black", alpha = 0.2)
+# g <- g + geom_point(size = 5, colour = "blue", alpha = 0.2)
+# g <- g + geom_smooth(method = "lm", colour = "black")
+# g
+```
+
+Now we can fit the linear regression model
+
+```{r}
+fit <- lm(price ~ carat, data = diamond)
+coef(fit)
+summary(fit)
+```
+From the fitted model, the coefficients are interpreted as:
+
+- Since $\hat{\beta}_1 = 3721.02$ we estimate an expected 3721.02 SIN dollar increase in price for every carat increase in mass of diamond. 
+
+- Since $\hat\beta_0 = -259.6259$ is the expected price of a $0$ carat diamond (Makes no sense or it is not useful nor interesting).
+
+
+In order to get a more interpretable intercept we can substract the $x$ mean and fit a new model
+
+```{r}
+fit2 <- lm(price ~ I(carat - mean(carat)), data = diamond)
+coef(fit2)
+```
+
+Now the interpretation is that the expected price of a diamond with the average sized diamond (carat = 0.2042) is around 500 SIN dollars
+
+
+## Predicting the price of a diamond
+
+```{r}
+newx <- c(0.16, 0.27, 0.34)
+# Manually
+coef(fit)[1] + coef(fit)[2]*newx
+# Using the "predict" function. Note the necessity to use the newdata as a data.frame with the name of the response variable
+predict(fit, newdata = data.frame(carat = newx))
+```
+
+The fitted values can be accessed using the `predict` function
+
+```{r}
+yhat <- predict(fit)
+plot(diamond$carat, diamond$price, col = "blue", lwd = 3)
+points(diamond$carat, yhat,col = "red", lwd = 2, pch = 8)
+```
+Therefore we can get the residuals
+
+```{r}
+ei <- diamond$price - predict(fit)
+plot(ei)
+```
+
+# Residuals 
+
+Residuals represent variation left unexplained by our model. We emphasize the difference between residuals and errors. The errors are the unobservable true errors from the known coefficients, while residuals are the observable errors from the estimated coefficients. In a sense, the residuals are estimates of the errors. 
+
+
+```{r}
+library(UsingR)
+data(diamond)
+library(ggplot2)
+g <- ggplot(diamond, aes(x = carat, y = price))
+g <- g + xlab("Mass (carats)")
+g <- g + ylab("Price (SIN $)")
+g <- g + geom_point(size = 3, colour = "black", alpha = 0.5)
+g <- g + geom_point(size = 1, colour = "blue", alpha = 0.2)
+g <- g + geom_smooth(method = "lm", colour = "black")
+g
+```
+
+Residuals:
+
+- Are defined as $e_i = Y_i - \hat{Y}_i$. 
+- Can be thought of as the outcome (Y) with the linear association of the predictor (x) removed.
+- The residual variation (variation after removing the predictor) is different from systematic variation (variation explained by the regression model).
+- Residual plots highlight poor model fit. 
+
+
+## Residuals, Coding example
+
+```{r}
+data(diamond)
+y <- diamond$price
+x <- diamond$carat
+n <- length(y)
+fit <- lm(y ~ x)
+e <- resid(fit)
+yhat <- predict(fit)
+max(abs(e - (y-yhat)))
+max(abs(e - (y - coef(fit)[1] - coef(fit)[2]*x)))
+```
+We can make a scatterplot of the data and add the regression line to the plot.
+
+```{r}
+plot(diamond$carat, diamond$price, xlab = "Mass (carats)",
+     ylab = "price (SIN $)",
+     bg = "lightblue", 
+     col = "black", cex = 1.1, pch = 21, frame = FALSE)
+abline(fit, lwd = 2)
+for(i in 1: n)
+    lines(c(x[i],x[i]), c(y[i], yhat[i]), col = "red", lwd = 2)
+
+```
+
+Now, let's take a look at the plot of residuals versus fitted (adjusted) values
+
+```{r}
+plot(x, e, xlab = "Mass (carats)",
+     ylab = "Residuals (SIN $)", bg = "lightblue", 
+     col = "black", cex = 0.8, pch = 21, frame = FALSE)
+abline(h = 0, lwd = 2)
+for(i in 1:n)
+    lines(c(x[i],x[i]), c(e[i],0), col = "red", lwd = 2)
+```
+
+Let's take a look at one example when the residuals can tell us that the linear model is not adequate for the relationshio between the variables.
+
+```{r}
+x <- runif(100, -3, 3)
+y <- x + sin(x) + rnorm(100,sd = 0.2)
+library(ggplot2)
+g <- ggplot(data.frame(x = x, y = y), aes(x = x, y = y))
+g <- g + geom_smooth(method = "lm", colour = "black")
+g <- g + geom_point(size = 3, colour = "black", alpha = 0.4)
+g <- g + geom_point(size = 1, colour = "red", alpha = 0.4)
+g
+```
+Now, we plot the residuals of the (linear) fitted model
+
+
+```{r}
+g <- ggplot(data.frame(x = x, y = resid(lm(y~x))), aes(x = x, y = y))
+g <- g + geom_hline(yintercept = 0, size = 2)
+g <- g + geom_point(size = 3, colour = "black", alpha = 0.4)
+g <- g + geom_point(size = 1, colour = "red", alpha = 0.4)
+g <- g + xlab("X") + ylab("Residual")
+g
+```
+
+Now, an example with heteroskedaticity. First, check that the values lie over the line.
+
+```{r}
+x <- runif(100, 0, 6) 
+y <- x + rnorm(100, mean = 0, sd = 0.001*x)
+g <- ggplot(data.frame(x = x, y = y), aes(x = x, y = y))
+g <- g + geom_smooth(method = "lm", colour = "black")
+g <- g + geom_point(size = 3, colour = "black", alpha = 0.4)
+g <- g + geom_point(size = 1, colour = "red", alpha = 0.4)
+g
+```
+
+and now take a look at the residuals (which can be thought as the fact of getting rid of the blank space)
+
+```{r}
+g <- ggplot(data.frame(x = x, y = resid(lm(y~x))), aes(x = x, y = y))
+g <- g + geom_hline(yintercept = 0, lwd = 2)
+g <- g + geom_point(size = 3, colour = "black", alpha = 0.4)
+g <- g + geom_point(size = 1, colour = "red", alpha = 0.4)
+g <- g + xlab("x") + ylab("Residual")
+g
+```
+When the variance is not constant, we say that there is **heteroskedaticity**. 
+
+
+Now, we can return to the diamond data set and take a look at the residual plot.
+
+### Diamond data residual plot
+
+```{r}
+diamond$e <- resid(lm(price ~ carat, data = diamond))
+g <- ggplot(diamond, aes(x = carat, y = e))
+g <- g + xlab("Mass (carats)") + ylab("Residual price (SIN $)")
+g <- g + geom_hline(yintercept = 0, lwd = 2)
+g <- g + geom_point(size = 1, colour = "black", alpha = 0.4)
+g <- g + geom_point(size = 3, colour = "blue", alpha = 0.4)
+g
+```
+
+
+Now, we are going to illustrate something about variability in the diamond dataset that will help us set the stage for defining some new properties about our regression model fit.
+
+The first fitted model is used to illustrate the variation of the price (only the intercept is fitted so the variation around the mean is modeled) whereas the second one is used to illustrate the variation of the price around the regression line (both intercept and slope are fitted so the variation is around the adjusted curve).
+
+```{r}
+e <- c(resid(lm(price ~ 1, data = diamond)), 
+       resid(lm(price ~ carat, diamond)))
+fit <- factor(c(rep("Itc", nrow(diamond)),
+                rep("Itc, slope", nrow(diamond))))
+g <- ggplot(data.frame(e = e, fit = fit), aes(y = e, x = fit, fill = fit))
+g <- g + geom_dotplot(binaxis = "y", size = 2, stackdir = "center", binwidth = 20)
+g <- g + xlab("Fitting approach") 
+g <- g + ylab("Residual price")
+g
+```
+
+## Residual variance
+
+For the model 
+
+\[
+    Y_i = \beta_0 + \beta_1 x_i + \varepsilon_i
+\]
+
+where $\varepsilon_i \sim N\left(0,\sigma^2\right)$ we can **estimate** the errors variance by using
+
+\[
+    \hat{\sigma}^2 = \dfrac{1}{n-2}\sum_{i=1}^{n}{e_i^2}
+\]
+where the $n-2$ is used in order to have an **unbiased** estimator.
+
+```{r}
+y <- diamond$price
+x <- diamond$carat
+n <- length(y)
+fit <- lm(y ~ x)
+summary(fit)$sigma
+
+sqrt(sum(resid(fit)^2/(n-2)))
+
+```
+
+It can be proved that the variation is decomposed as
+
+\[
+    SST = SSR + SSE
+\]
+where $SST = \sum_{i=1}^{n}{(Y_i-\bar{Y})^2}$, $SSR = \sum_{i=1}^{n}{(\hat{Y}_i - \bar{Y})^2}$ and $SSE = \sum_{i=1}^{n}{e_i^2} = \sum_{i=1}^{n}{(Y_i - \hat{Y}_i)^2}$
+
+Then, we can define the coefficient of determination $R^2$ as
+
+\[
+    R^2 = \dfrac{SSR}{SST}
+\]
+
+which measures the proportion/percentage of variability that is explained by the (linear) relationship with the predictor. Concerning $R^2$
+
+- $R^2$ is the percentage of variation explained by the regression model.
+- It satisfies $0\leq R^2 \leq 1$.
+- Can be a **misleading** summary of model fit:
+    + Deleting data can inflate it.
+    + Adding terms to a regression model always increases $R^2$.
+- Take a look at the Anscombe data and Datasaurus dozen.
+
+
+# Inference in regression
+
+Inference is the process of drawing conclusions about a population using a sample. In statistical inference, we must account for the uncertainty in our estimates in a principled way. Hypothesis tests and confidence intervals are among the most common forms of statistical inference. 
+
+These statements apply generally, and, of course, to the regression setting that we have been studying. In the next few lectures, we will cover inference in regression where we make some Gaussian assumptions about the errors. 
+
+
+## Inference in regression
+
+Review. Statistics like $\dfrac{\hat{\theta} - \theta}{\hat{\sigma}_{\hat\theta}}$ often have the following properties:
+
+- Is normally distributed and has a finite sample student $t$-distribution if the variance is replaced with a sample estimate (under normality assumptions).
+- Can be used to test $H_0: \theta = \theta_0$ versus $H_a: \theta >, <, \neq \theta_0$
+- Can be used to create a confidence interval for $\theta$ via $\hat\theta \pm Q_{1-\alpha/2}\hat{\sigma}_{\hat\theta}$ where $Q_{1-\alpha/2}$ is the relevant quantile form either a normal or $t$ distribution.
+
+For the case of $\beta_0$ and $\beta_1$ for the linear regression model, we have that 
+
+\[
+    \hat\beta_0 \sim \mathcal{N}\left(\beta_0,\left(\dfrac{1}{n} + \dfrac{\bar{x}^2}{\sum_{i=1}^{n}{(x_i - \bar{x})^2}}\right)\sigma^2\right)
+\]
+and 
+
+\[
+    \hat\beta_1 \sim \mathcal{N}\left(\beta_1, \dfrac{\sigma^2}{\sum_{i=1}^{n}{(x_i - \bar{x})^2}}\right)
+\]
+
+so that 
+\[
+    \dfrac{\hat{\beta}_j - \beta_j}{\hat{\sigma}_{\hat\beta_j}} \sim t_{n-2}
+\]
+
+
+## Coding example
+
+First, we will use the diamond dataset to illustrate some formulas given before.
+
+
+```{r}
+library(UsingR)
+data(diamond)
+y <- diamond$price
+x <- diamond$carat
+n <- length(y)
+beta1 <- cor(x,y)*sd(y)/sd(x)
+beta0 <- mean(y) - beta1*mean(x)
+e <- y - beta0 - beta1*x
+sigma <- sqrt(sum(e^2)/(n-2))
+ssx <- sum((x-mean(x))^2)
+seBeta0 <- (1/n + mean(x)^2/ssx)^0.5*sigma
+seBeta1 <- sigma/sqrt(ssx)
+tBeta0 <- beta0/seBeta0
+tBeta1 <- beta1/seBeta1
+pBeta0 <- 2*pt(abs(tBeta0), df = n-2, lower.tail = FALSE)
+pBeta1 <- 2*pt(abs(tBeta1), df = n-2, lower.tail = FALSE)
+coefTable <- rbind(c(beta0, seBeta0, tBeta0, pBeta0), c(beta1, seBeta1, tBeta1, pBeta1))
+colnames(coefTable) <- c("Estimate", "Std. Error", "t value", "P(>|t|)")
+rownames(coefTable) <- c("(Intercept)", "x")
+coefTable
+```
+```{r}
+fit <- lm(price ~ carat, diamond)
+summary(fit)$coefficients
+```
+We can manually generate confidence intervals
+
+```{r}
+sumCoef <- summary(fit)$coefficients
+sumCoef[1,1] + c(-1,1)*qt(0.975, df = fit$df)*sumCoef[1,2]
+sumCoef[2,1] + c(-1,1)*qt(0.975, df = fit$df)*sumCoef[2,2]
+
+```
+## Prediction
+
+Consider predicting $Y$ at value of $X$: predicting the price of a diamond given the carat, or predicting the height of a child given the height of the parents.
+
+The obvious way to predict at a point $x_0$ is to use the estimate
+
+\[
+    \hat\beta_0 + \hat\beta_1x_0
+\]
+
+but a standard error is needed to create a **prediction interval**. For that end, we must emphasize the difference between intervals for the regression line at a point $x_0$ and the prediction of what a $y$ would be at a point $x_0$. 
+
+For the line, the s.e. is $\hat\sigma\sqrt{\dfrac{1}{n} + \dfrac{(x_0 - \bar{X})^2}{\sum_{i=1}^{n}{(x_i - \bar{X})^2}}}$ whereas for the prediction the s.e. is $\hat\sigma\sqrt{1 + \dfrac{1}{n} + \dfrac{(x_0 - \bar{X})^2}{\sum_{i=1}^{n}{(x_i - \bar{X})^2}}}$
+
+
+Let's take a look at one example
+
+```{r}
+library(ggplot2)
+data(diamond)
+y <- diamond$price
+x <- diamond$carat
+n <- length(y)
+fit <- lm(price ~ carat, diamond)
+newx <- data.frame(x = seq(min(x), max(x), length = 100))
+names(newx) <- "carat"
+p1 <- data.frame(predict(fit, newdata = newx, interval = ("confidence")))
+p2 <- data.frame(predict(fit, newdata = newx, interval = ("prediction")))
+p1$interval <- "confidence"
+p2$interval <- "prediction"
+p1$x <- newx$carat
+p2$x <- newx$carat
+dat <- rbind(p1,p2)
+names(dat)[1] <- "y"
+
+g <- ggplot(dat, aes(x = x, y = y))
+g <- g + geom_ribbon(aes(ymin = lwr, ymax = upr, fill = interval), alpha = 0.4)
+g <- g + geom_line()
+g <- g + geom_point(data = data.frame(x = x, y = y), aes(x = x, y = y), size = 2)
+g
+```
+
+# Quiz 2
+
+```{r}
+x <- c(0.61, 0.93, 0.83, 0.35, 0.54, 0.16, 0.91, 0.62, 0.62)
+y <- c(0.67, 0.84, 0.6, 0.18, 0.85, 0.47, 1.1, 0.65, 0.36)
+
+# Obtain the p-value for beta 1
+fit <- lm(y~x)
+summary(fit)$coef
+summary(fit)$sigma
+
+summary(lm(y~x))
+
+```
+
+```{r}
+data(mtcars)
+fit <- lm(mpg ~ I(wt - mean(wt)), mtcars)
+confint(fit)
+
+fit <- lm(mpg ~ wt, data = mtcars)
+predict(fit, newdata = data.frame(wt = 3), interval = "prediction")
+
+
+fit <- lm(mpg ~ wt, data = mtcars)
+confint(fit)[2, ] * 2
+
+n <- nrow(mtcars)
+fit1 <- lm(mpg ~ wt, mtcars)
+SS1<- sum(resid(fit1)^2)
+fit2 <- lm(mpg ~ 1, mtcars)
+1-summary(fit1)$r.squared
+SS2<-sum(resid(fit2)^2)
+SS1/SS2
+SS2/SS1
+
+sse1 <- sum((predict(fit1) - mtcars$mpg)^2)
+sse2 <- sum((predict(fit2) - mtcars$mpg)^2)
+sse1/sse2
+
+
+summary(fit)
+newx <- data.frame(x = rep(mean(mtcars$wt), length = 1))
+names(newx) <- "wt"
+predict(fit, newdata = newx, interval = ("confidence"))
+
+newx <- data.frame(x = rep(3, length = 1))
+names(newx) <- "wt"
+predict(fit, newdata = newx, interval = ("prediction"))
+
+
+
+newx <- data.frame(x = rep(2, length = 1))
+names(newx) <- "wt"
+predict(fit, newdata = newx, interval = ("confidence"))
+
+summary(fit)$r.squared
+```
+
+
+
+
+
+
+
+
+

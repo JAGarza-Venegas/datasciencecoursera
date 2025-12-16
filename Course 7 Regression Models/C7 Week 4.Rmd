@@ -1,0 +1,138 @@
+---
+title: "C7 Week 4 GLMs"
+author: "JAGV"
+date: "2024-12-13"
+output: html_document
+---
+
+# Generalized Linear Models
+
+GLMs (Generalized Linear Models) were a great advance in statistical modeling. Even though linear models are the most useful applied statistical technique, they have their limitations:
+
+- additive response models don't make much sense if the response is discrete (binary data).
+- Additive error models often don't make sense when the outcome has to be positive.
+- transformations are often hard to interpret and they might not be applicable at all (for instance, logarithms for non-positive data).
+- there is value in modeling the data on the scale that it was collected.
+
+The GLM is a family of models that includes linear models. It handles many of the issues with linear models, but at the expense of some complexity and loss of some of the mathematical tidiness. A GLM involves 3 components:
+
++ An exponential family model for the response.
++ A systematic component via a linear predictor.
++ A link function that connects the means of the response of the linear predictor.
+
+The three most famous cases of GLMs are: linear models, binomial and binary regression and Poisson regressión.
+
+
+## Generalized Linear Models
+
+Example: logistic regression.
+
+Assume that $Y_i \sim Bernoulli(\mu_i)$ so that $E\left[Y_i\right] = \mu_i$, where $0 \leq \mu_i \leq 1$. The linear predictor is $\eta = \sum_{k=1}^p{X_{ik}\beta_{k}}$. In this case, the link function is the **logit** function defined as:
+\[
+    g\left(\mu\right) = \eta = log\left(\dfrac{\mu}{1-\mu}\right)
+\]
+$g$ is the natural log odds. Recall that we are not transforming the $Y's$ but the mean.
+
+The likelihood is then 
+\[
+    \prod_{i=1}^{n}\mu_{i}^{y_i}\left(1-\mu_i\right)^{1-y_i}=exp\left(\sum_{i=1}^{n}{y_i\eta_i}\right)\prod_{i=1}^{n}{\left(1+\eta_i\right)^{-1}}
+\]
+
+Example: Poisson regression.
+
+Assume that $Y_i \sim Poisson(\mu_i)$ so that $E\left[Y_i\right] = \mu_i$, where $0 \leq \mu_i$. The linear predictor is (again) $\eta = \sum_{k=1}^p{X_{ik}\beta_{k}}$. In this case, the link function is the **logit** function defined as:
+\[
+    g\left(\mu\right) = \eta = log\left(\mu\right)
+\]
+$g$ is the natural log odds. Recall that we are not transforming the $Y's$ but the mean.
+
+The likelihood is then 
+\[
+    \prod_{i=1}^{n}\left(y_i!\right)^{-1}\mu_{i}^{y_i}e^{-\mu_i} \propto exp\left(\sum_{i=1}^{n}{y_i\eta_i} - \sum_{i=1}^{n}\mu_i\right)
+\]
+
+
+Some things to note:
+
+In each case, the only way in which likelihood depends on the data is through the quantity
+
+\[
+    \sum_{i=1}^{n}{y_i\eta_i} = \sum_{i=1}^{n}y_i\sum_{k=1}^{p}X_{ik}\beta_{k} = \sum_{k=1}^{p}\beta_k\sum_{i=1}^{n}X_{ik}y_i
+\]
+
+
+For GLMs, estimates have to be obtained numerically through an iterative algorithm. The algorithms are well-behaved so convergence is usually not a problem (unless you are dealing with a lot of data on a boundary). The exact equation that gets solved is the so-called **normal equations**
+
+\[
+    \sum_{i=1}^{n}{\dfrac{\left(Y_i-\mu_i\right)}{Var\left(Y_i\right)}W_i}  = 0  
+\]
+where
+
+
++ $Var\left(Y_i\right) = \sigma^2$ (constant), for the linear model.
++ $Var\left(Y_i\right) = \mu_i\left(1-\mu_i\right)$, for the Bernoulli model.
++ $Var\left(Y_i\right) = \mu_i$ for the Poisson model.
++ $W_i$ are derivative terms that we won't deal with.
+
+In the latter two cases, it is often relevant to have a more flexible variance model, even if it doesn't correspond to an actual likelihood. We might make the following changes:
+
+\[
+    \sum_{i=1}^{n}{\dfrac{\left(Y_i-\mu_i\right)}{\phi\mu_i\left(1-\mu_i\right)}W_i}  \hspace{5ex} \sum_{i=1}^{n}{\dfrac{\left(Y_i-\mu_i\right)}{\phi\mu_i}W_i}  
+\]
+These are called *quasi-likelihood* normal equations.
+
+
+# Logistic regression
+
+Binary GLMs come from trying to model outcomes that only can take two values. Some examples are: survival or not at the end of a study, winning versus losing of a team, and a success versus failure of a treatment or product. These outcomes are called **Bernoulli** outcomes.
+
+When we have several exchangeable binary outcomes for the same level of covariate values, then the data is called **binomial**, and we can aggregate the $0$'s and $1$'s into the count of $1$'s. As an example, imagine if we sprayed insect pests with 4 different pesticides and counted whether they died or not. Then for each spray, we could summarize the data with the count of dead and total numbers that were sprayed and treat the data as binomial rather than Bernoulli.
+
+
+
+# Logistic Regression Part 1
+
+Frequently we care about outcomes that have two values:
+
+- alive/dead
+- Win/loss
+- Success/Failure
+- among others
+
+These outcomes are called **binary**, Bernoulli or 0/1 outcomes.
+
+
+## Linear versus logistic regression:
+
+Linear regression:
+
+\[
+    Y_i = \beta_0 + \beta_1X_i + \varepsilon_i
+\]
+
+from which
+
+\[
+    E\left[Y_i\right] = \beta_0 + \beta_1X_i
+\]
+
+if $Y_i$ is a binary variable, then $\beta_0$ is the probability of a success when $X_i = 0$ and $\beta_1$ the increase in probability due to unit increases in the predictor $X_i$ (for instance, winning a game $Y_i$ depends on the number of points scored $X_i$) whereas $\beta_1$ stands for the probability increase for each extra point scored).
+
+**Nevertheless** fitting a linear regression model in this fashion may lead to negative or greater than one predicted $\hat{Y_i}$ values. Therefore, a logistic regression is preferred.
+
+- Binary outcome $Y_i$
+- Probability $\mathbb{P}\left(Y_i\vert X_i, \beta_0, \beta_1\right)$
+- Odds $\dfrac{\mathbb{P}\left(Y_i\vert X_i, \beta_0, \beta_1\right)}{1-\mathbb{P}\left(Y_i\vert X_i, \beta_0, \beta_1\right)}$
+- Log of the odds (logit): $log\left(\dfrac{\mathbb{P}\left(Y_i\vert X_i, \beta_0, \beta_1\right)}{1-\mathbb{P}\left(Y_i\vert X_i, \beta_0, \beta_1\right)}\right)$
+
+Therefore, the **logistic regression model** is
+
+\[
+    \mathbb{P}\left(Y_i\vert X_i, \beta_0, \beta_1\right) = \dfrac{e^{\beta_0 + \beta_1X_i}}{1+e^{\beta_0 + \beta_1X_i}}
+\]
+
+where we model the expected value of the linear regression model using exponentials related to the odds. This can be seen when we rewrite the expression as
+
+\[
+    log\left(\dfrac{\mathbb{P}\left(Y_i\vert X_i, \beta_0, \beta_1\right)}{1-\mathbb{P}\left(Y_i\vert X_i, \beta_0, \beta_1\right)}\right) = \beta_0 + \beta_1X_i
+\]
