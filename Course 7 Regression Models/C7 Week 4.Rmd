@@ -136,3 +136,314 @@ where we model the expected value of the linear regression model using exponenti
 \[
     log\left(\dfrac{\mathbb{P}\left(Y_i\vert X_i, \beta_0, \beta_1\right)}{1-\mathbb{P}\left(Y_i\vert X_i, \beta_0, \beta_1\right)}\right) = \beta_0 + \beta_1X_i
 \]
+
+In this case:
+
+- $\beta_0$ is the log odds of a success when $X_i = 0$
+- $\beta_1$ is the log odds of a success probability for each unit $X_i$ increases (compared to the zero case).
+- $e^{\beta_1}$ is the odds ratio of a success probability for each unit increase in $X_i$ (compared to the zero case).
+
+
+A note in the odds:
+
+The idea of the odds is that of making a fair game. For instance, consider that $p$ is the probability of success (and you win $X$), therefore, in a binary experiment the probability of failure is $1-p$ and you have to pay (lose) $Y$. Therefore, in order to the game to be fair, we need to have:
+
+\[
+    E\left[earnings\right] = Xp + (-Y)\left(1-p\right) = Xp-Y\left(1-p\right) \underbrace{=}_{fair} 0
+\]
+
+from this equation, we have that $Xp = Y\left(1-p\right)$ or 
+
+\[
+    \dfrac{Y}{X} = \dfrac{p}{1-p}
+\]
+
+Note that
+
+- when $p>\dfrac{1}{2}$ then $p > 1-p \Longrightarrow  \dfrac{Y}{X} = \dfrac{p}{1-p} > 1 \Longrightarrow Y > X$, which means that "you pay **more** when you lose than you get when you win".
+- similarly, when $p < \dfrac{1}{2}$ then $p < 1-p \Longrightarrow  \dfrac{Y}{X} = \dfrac{p}{1-p} < 1 \Longrightarrow Y < X$, which means that "you pay **less** when you lose than you get when you win".
+
+
+# Logistic regression Part II
+
+We will use sliders to visualize fitting logistic regression curves. Knit is not working with `manipulate`, uncomment to see the graph.
+
+```{r}
+#install.packages("manipulate")
+# library(manipulate)
+# x <- seq(-10, 10, length = 1000)
+# manipulate(
+#     plot(x,exp(beta0 + beta1 * x) / (1 + exp(beta0 + beta1 * x)),
+#          type = "l", lwd = 3, frame = FALSE),
+#     beta1 = slider(-2,2,step = .1, initial = 2),
+#     beta0 = slider(-2,2, step = .1, initial = 0)
+#     )
+```
+
+# Logistic Regression Part III
+
+Let's take a look at some examples:
+
+```{r}
+library(MASS)
+data("Pima.tr")
+
+logmodel <- glm(type ~ glu, data = Pima.tr, family = binomial)
+summary(logmodel)
+
+
+plot(Pima.tr$glu, logmodel$fitted.values, pch = 19, col = "blue", xlab = "Glucose", ylab = "Prob Diabetes")
+
+
+confint(logmodel)
+exp(logmodel$coefficients)
+exp(confint(logmodel))
+```
+
+`mtcars` dataset
+
+
+```{r}
+data("mtcars")
+
+logmodel <- glm(am ~ hp, data = mtcars, family = binomial)
+summary(logmodel)
+
+
+plot(mtcars$hp, logmodel$fitted.values, pch = 19, col = "blue", xlab = "mt", ylab = "Prob am")
+
+
+confint(logmodel)
+exp(logmodel$coefficients)
+exp(confint(logmodel))
+```
+
+
+
+`iris` dataset
+
+```{r}
+data("iris")
+iris$setosa <- ifelse(iris$Species == "setosa",1,0)
+logmodel <- glm(setosa ~ Sepal.Length, data = iris, family = binomial)
+summary(logmodel)
+
+
+plot(iris$Sepal.Length, logmodel$fitted.values, pch = 19, col = "blue", xlab = "Sepal Length", ylab = "Prob setosa")
+
+
+confint(logmodel)
+exp(logmodel$coefficients)
+exp(confint(logmodel))
+```
+
+
+# Count data
+
+The Poisson distribution is a discrete probability distribution used to model count data. It assumes that the data is unbounded which might not be the case for all count data examples. However, when the upper limit is unknown or is very large relative to the number of events we can model the counts as unbounded. If the upper bound is known, we can model the proportion or rate. 
+
+
+## Poisson regression Part I
+
+Examples of counts: 
+
+- calls to a call center
+- number of flu cases in an area
+- number of cars that cross a bridge
+
+examples of rates:
+
+- percent of children passing a test
+- percent of hits to a website from a country
+
+The Poisson mass function is
+
+\[
+    X \sim Poisson\left(\lambda t\right) \Longleftrightarrow \mathbb{P}\left(X = x\right) = \dfrac{\left(\lambda t\right)^xe^{-\lambda t}}{x!}
+\]
+
+- The mean and variance are $\lambda t$, and $E\left[X/t\right] = \lambda$ (the rate estimate).
+- The Poisson tends to a normal as $\lambda t \rightarrow \infty$.
+
+## Linear regression 
+
+Using linear regression for count data:
+
+\[
+    Y_i = \beta_0 + \beta_1X_i + \varepsilon_i
+\]
+
+where:
+
+- $\beta_0$ is the number of counts when $X = 0$
+- $\beta_1$ is the increase in counts per unit increase of the predictor $X$ (for instance, the increase in visits of a website per unit day).
+
+
+Now consider the model
+
+\[
+    log\left(Y_i\right) = \beta_0 + \beta_1x_i+\varepsilon_i
+\]
+which is used since the quantity $e^{E\left[log\left(Y\right)\right]}$ estimates **the geometric mean** of $Y$:
+
+\[
+    e^{\frac{1}{n}\sum_{i=1}^{n}{log\left(y_i\right)}} = \left(\prod_{i=1}^{n}{y_i}\right)^{1/n}
+\]
+
+This is because when you take the natural logarithm of outcomes and fit a regression model, your exponentiated coefficients estimate things about geometric means:
+
+- $e^{\beta_0}$ estimated geometric mean counts when $X = 0$.
+- $e^{\beta_1}$ estimated relative increase or decrease in geometric mean counts per unit increase in $X$.
+
+## Poisson Regression Part II
+
+## Linear vs Poisson regression
+
+Linear regression
+
+\[
+    Y_i = \beta_0 + \beta_1X_i + \varepsilon_i \Longrightarrow E\left[Y_i \vert X_i,\beta_0,\beta_1\right] = \beta_0 + \beta_1X 
+\]
+
+Poisson/log-linear regression
+
+\[
+    log\left(E\left[Y_i \vert X_i,\beta_0,\beta_1\right]\right) = \beta_0 + \beta_1X \Longrightarrow E\left[Y_i \vert X_i,\beta_0,\beta_1\right] = e^{\beta_0 + \beta_1Xi}
+\]
+
+
+Consider that the model is
+\[
+    E\left[Y_i \vert X_i, \beta_0,\beta_1\right] = e^{\beta_0 + \beta_1X_i} = e^{\beta_0}e^{\beta_1X_i}
+\]
+
+so that, a **unit increase** in $X_i$ leads to 
+\[
+    E\left[Y_i \vert X_i, \beta_0,\beta_1\right]  = e^{\beta_0}e^{\beta_1X_i}\left[e^{\beta_1}\right]
+\]
+which means that $E\left[Y_i \vert X_i, \beta_0,\beta_1\right]$ is multiplied by $e^{\beta_1}$
+
+
+Let's take a look at some examples:
+
+
+1. Warpbreaks.
+
+```{r}
+data("warpbreaks")
+
+modelo <- glm(breaks ~ wool, data = warpbreaks, family = poisson)
+summary(modelo)
+### Check the mean-variance Poisson relationship
+
+plot(modelo$fitted.values, modelo$residuals, pch = 19, col = "blue", ylab = "Residuals", xlab = "Fitted")
+
+### Quick diagnose
+deviance(modelo) / df.residual(modelo)
+```
+
+2. Discoveries.
+
+```{r}
+data("discoveries")
+
+modelo <- glm(discoveries ~ time(discoveries), data = discoveries, family = poisson)
+summary(modelo)
+### Check the mean-variance Poisson relationship
+
+plot(modelo$fitted.values, modelo$residuals, pch = 19, col = "blue", ylab = "Residuals", xlab = "Fitted")
+
+### Quick diagnose
+deviance(modelo) / df.residual(modelo)
+```
+
+3. Ships
+
+```{r}
+library("MASS")
+data("ships")
+
+modelo <- glm(incidents ~ type + year + offset(log(service+1)), data = ships, family = poisson)
+summary(modelo)
+### Check the mean-variance Poisson relationship
+
+plot(modelo$fitted.values, modelo$residuals, pch = 19, col = "blue", ylab = "Residuals", xlab = "Fitted")
+
+### Quick diagnose
+deviance(modelo) / df.residual(modelo)
+```
+
+# Hodgepodge
+
+### Bonus material (Oh my God!)
+
+How to fit functions using linear models? Up to this point, we only have fitted lines, planes, and polynomials for linear models. Consider a more general model
+
+\[
+    Y_i = f\left(X_i\right) + \varepsilon_i
+\]
+
+Using the **scatterplot smoothing** we can fit such a model using linear models. The **regression splines** technique is a basic one for this end.
+
+\[
+    Y_i = \beta_0 + \beta_1X_i + \sum_{j=1}^{d}{I\left(x_i - \xi_j\right)}\gamma_j + \varepsilon_i
+\]
+
+where $\xi_1 \leq  \dots \leq \xi_d$ are called the **knot points** and $I\left(\cdot\right)$ is the function defined as
+\[
+    I\left(x\right) = \left\{\begin{array}{rl}x & \text{if }x>0 \\ 0 & \text{if }x \leq 0\end{array}\right.
+\]
+
+
+Let's take a look at one example:
+
+```{r}
+n <- 500
+x <- seq(0, 4 * pi, length = n)
+y <- sin(x) + rnorm(n, sd = 0.3)
+knots <- seq(0, 8 * pi, length = 20)
+splineTerms <- sapply(knots, function(knot) (x > knot) * (x - knot))
+xMat <- cbind(1,x,splineTerms)
+yhat <- predict(lm(y ~ xMat - 1))
+plot(x, y, frame = FALSE, pch = 21, bg = "lightblue", cex = 2)
+lines(x, yhat, col = "red", lwd = 2)
+```
+
+HOWEVER, there is a big problem with this: the fitted function is non-differentiable at every knot point. In order to assess this problem, we can use squared terms instead to make the graph smooth (... and use cubic terms to make twice differentiable continuous at knot points, and so on):
+
+\[
+    Y_i = \beta_0 + \beta_1X_i + \beta_2X_i^2+ \sum_{j=1}^{d}{I\left(x_i - \xi_j\right)^2}\gamma_j + \varepsilon_i
+\]
+
+Let's take a look at one example:
+
+```{r}
+n <- 500
+x <- seq(0, 4 * pi, length = n)
+y <- sin(x) + rnorm(n, sd = 0.3)
+knots <- seq(0, 8 * pi, length = 20)
+splineTerms <- sapply(knots, function(knot) (x > knot) * (x - knot)^2)
+xMat <- cbind(1,x,x^2, splineTerms)
+yhat <- predict(lm(y ~ xMat - 1))
+plot(x, y, frame = FALSE, pch = 21, bg = "lightblue", cex = 2)
+lines(x, yhat, col = "red", lwd = 2)
+```
+
+
+### Harmonics using linear models
+
+```{r}
+notes4 <- c(261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25)
+t <- seq(0, 2, by = 0.001)
+n <- length(t)
+c4 <- sin(2 * pi * notes4[1] * t)
+e4 <- sin(2 * pi * notes4[3] * t)
+g4 <- sin(2 * pi * notes4[5] * t)
+chord <- c4 + e4 + g4 + rnorm(n, mean = 0, sd = 0.3)
+x <- sapply(notes4, function(freq) sin(2 * pi * freq * t))
+fit <- lm( chord ~ x - 1)
+Notes <- c("c4", "d4", "e4", "f4", "g4", "a4", "b4", "c5")
+plot(fit$coefficients^2, ylab = "Coef^2", col = "red", type = "l", lwd = 2, xaxt = "n")
+axis(1, at = seq(1,length(Notes), by = 1), labels = Notes)
+```
+
