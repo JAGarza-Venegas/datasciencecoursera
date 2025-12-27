@@ -202,7 +202,7 @@ g2
 Here, you can see that **$x_2$ is not related** to the residual variable $x1$. That is what linear model is doing: it is removing the $x_2$ from both the $x_1$ and $Y$ and that is why you get this sort of correct relationship when you fit both variables. 
 
 
-**Be careful** that does not mean that throwing every variable into your regression model is the right thing to do. There are consequences to throwing in extra variables, unnecesary variables, into your regression relationship.
+**Be careful** that does not mean that throwing every variable into your regression model is the right thing to do. There are consequences to throwing in extra variables, unnecessary variables, into your regression relationship.
 
 
 
