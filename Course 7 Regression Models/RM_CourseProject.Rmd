@@ -1,6 +1,6 @@
 ---
 title: "Project C7"
-author: "JAGV"
+author: "J.G"
 date: "2025-12-26"
 output: html_document
 ---
