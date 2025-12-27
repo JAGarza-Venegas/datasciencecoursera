@@ -1,0 +1,87 @@
+---
+title: "Project C7"
+author: "JAGV"
+date: "2025-12-26"
+output: html_document
+---
+
+## Executive Summary
+Using a sample of 32 automobiles, we tried to respond to questions about if there is a difference in the miles per gallon consumption due to the type of automobile transmission and if is it possible to quantify it. The Exploratory Data Analysis was done via boxplots where it can be inferred that there is a significant difference which was tested using the two sample $t$-test. Several Linear Regression Models were fitted in order to quantify that difference: even though the Simple Linear Regression Model provide a regression coefficient to measure that difference, the model assumptions are violated. Other Multiple Regression Models were fitted and some variables were dropped using the Variance Inflance Factor as a measure to drop out variables from the model. 
+
+## Report
+
+The data is a data frame containing 10 aspects of automobile design and performance for 32 automobiles (73-74 models). The variable `am` is a binary variable standing for the transmission type: $0$ for automatic and $1$ for manual. The variable `mpg` is the miles per gallon fuel consumption.
+
+Let's take a look at the data.
+
+```{r}
+boxplot(mpg ~ am, data = mtcars, main = "1973-1974 models", xlab = "Transmission", names = c("Automatic", "Manual"), ylab = "Miles per Gallon")
+with(mtcars, tapply(mpg, am, summary))
+## Statistical Inference: difference in mean
+mpg_auto <- mtcars$mpg[mtcars$am==0]
+mpg_manual <- mtcars$mpg[mtcars$am==1]
+
+## Test if the mean level of the mpg is greater for auto than for manual automobiles, so the alternative is "less".
+t.test(mpg_auto, mpg_manual, paired = FALSE, alternative = "less")
+
+## Check for normality assumption
+library(nortest)
+ad.test(mpg_auto)
+ad.test(mpg_manual)
+```
+Since the $p-$value of the two sample t-test is $p = 0.0006 < \alpha = 0.05$ we reject the null hypothesis and conclude in favour of the alternative: $\mu_{auto} < \mu_{manual}$ at the $95\%$ level. The normality assumption was tested using the Anderson-Darling test, and we fail to reject the normality assumption.
+
+
+## Linear models
+
+We can fitt a regression model using only two variables
+```{r}
+model1 <- lm(mpg ~ am, data = mtcars)
+summary(model1)
+plot(mtcars$am,mtcars$mpg, pch = 19,col = factor(mtcars$am), main = "Simple Linear regression", ylab = "Miles Per Gallon", xlab = "Transmission")
+abline(lm(mpg ~ am, data = mtcars), col = "blue", lwd = 3)
+```
+
+As the coefficients are $\beta_0 = 17.147$ and $\beta_1 = 7.245$, that means that there is a mean difference of 7.245 mpg between automatic (17.147 estimated mean mpg, the reference level) and manual transmission (24.392 estimated mean mpg).
+
+## Residual analysis.
+
+Let's make a diagnosis of this SLR model. 
+
+```{r}
+## Graphs
+boxplot(model1$residuals)
+plot(model1$fitted.values, model1$residuals, main = "Fitted values vs. residuals", xlab = "Fitted Value", ylab = "Residual", col = "blue", pch = 19)
+plot(model1$residuals, main = "Residuals of the fitted linear model", xlab = "Observation", ylab = "Residual", col = "blue", pch = 19)
+
+## Hypotesis Testing:
+
+# Normality
+ad.test(model1$residuals)
+
+# Heteroskedaticity
+library("lmtest")
+bptest(model1)
+# Uncorrelation
+dwtest(model1)
+```
+
+From the graphs and hypotesis tests, we can conclude that the normality assumption is met, but the homoskedasticity and uncorrelated assumptions are violated. Therefore, the interpretation of the coefficients is not supported because the assumptions are not met. However, this model can be used only for description, as George Box said: *"All models are wrong, but some are useful"*
+
+## Other Linear Models
+
+Multiple regression models
+
+```{r}
+model_all <- lm(mpg ~ ., data = mtcars)
+summary(model_all)
+library(car)
+vif(model_all)
+model2 <- lm(mpg ~. - disp, data = mtcars)
+vif(model2)
+model3 <- lm(mpg ~. - disp - cyl, data = mtcars)
+vif(model3)
+
+summary(model3)
+```
+Using the Variance Inflate Factor (VIF), we can decide to drop out some variables from the model fitted with all variables. There is only a way to proceed, and we decided to do so as a value of $VIF_k > 10$ is considered a sign of multicollinearity problem. We dropped out of the model, one by one, the predictors `disp` and `cyl`. The $R^2_{adj}$ for this model is $86.55\%$ greater than the value of the SLR model.
