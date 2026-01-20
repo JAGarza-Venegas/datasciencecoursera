@@ -1,0 +1,251 @@
+---
+title: "C8 Week 1"
+author: "JAGV"
+date: "2026-01-08"
+output: html_document
+---
+
+
+# Prediction, errors and cross validation
+
+One of the most common tasks performed by data scientists and data analysts are **prediction** and **machine learning**.
+
+
+## About the course
+
+It covers basic ideas behind machine learning/prediction
+
+- Study design - training vs. test sets.
+- Conceptual issues - out of sample error, ROC curves
+- Practical implementation - the `caret` package
+
+## Motivation
+
+Who predicts?
+
+- Local governments -> pension payments
+- Google -> whether you will click on an ad
+- Netflix -> what movies you will watch
+- Insurance companies -> what you risk of death is
+- Tecnologico de Monterrey -> who will succeed in their programs
+
+## What is prediction?
+
+Components of a predictor: question --> input data --> features --> algorithm --> parameters --> evaluation
+
+
+Let's take a look at one example. We can use the `spam` dataset from `kernlab`
+
+```{r}
+# install.packages("kernlab")
+library(kernlab)
+data(spam)
+head(spam)
+
+plot(density(spam$your[spam$type=="nonspam"]),col = "blue", main = "", xlab = "Frequency of 'your'")
+lines(density(spam$your[spam$type=="spam"]), col = "red")
+```
+we can propose a classification algorithm: choose a $C$ such that the word *your* appears more than $C$ times, then the e-mail is classified as spam.
+
+```{r}
+prediction <- ifelse(spam$your>0.5, "spam", "nonspam")
+table(prediction,spam$type)/length(spam$type)
+```
+
+## Relative importance of steps
+
+Be careful: the most important thing seems to be the **question** we want to answer, not the algorithm we use. Sometimes, the data will not be useful to have an answer at all, as stated by John Tukey: *"The combination of some data and an aching desire for an answer does not ensure that a reasonable answer can be extracted from a given body of data"*. In fact, **often** more data > better models, that is why input data follows the question. 
+
+Concerning the **features**, the properties of *good* features:
+
+- they lead to data compression
+- retain relevant information
+- are created based on expert application knowledge
+
+whereas *common mistakes* include:
+
+- trying to automate feature selection
+- not paying attention to data-specific quirks
+- throwing away information unnecessarily
+
+The algorithm is, surprisingly far less important than *question*, *input data* and *features*. Finally, prediction is about accuracy tradeoffs: interpretability, speed, simplicity and scalability. Recall the [Netflix competition prize](https://milvus.io/ai-quick-reference/what-is-the-netflix-prize-competition-and-its-relevance-to-recommender-systems) where scalability was not feasible due to large scala data.
+
+## In sample and out sample errors
+
+In Machine Learning (ML) the error you get on the same data set used to build your predictor is the **in sample error** also called as **resubstitution error** whereas the error you get on a new data set is the **out of sample error** also called **generalization error**.
+
+
+Let's take a look at one example of classification, using the `spam` dataset.
+
+```{r}
+library(kernlab)
+data(spam)
+### Use "Rounding" for R versions before the 3.6.0
+set.seed(333, sample.kind = "Rounding")
+### Let's take a random sample of size 10 [10 rows, all columns from the dataset]
+smallSpam <- spam[sample(dim(spam)[1],size = 10),]
+spamLabel <- (smallSpam$type == "spam")*1+1
+plot(smallSpam$capitalAve,col = spamLabel)
+```
+
+now we can **build** a predictor: classify the e-mail as spam whenever there is a lot of capital letters. We can check two different rules for predictors.
+
+
+```{r}
+## Prediction Rule 1:
+## Spam whenever CapitalAve > 2.7 or 2.40 <= CapitalAve <=2.45
+## Nonspam whenever CapitalAve < 2.40 or 2.45 < CapitalAve <= 2.70
+rule1 <- function(x) {
+    prediction <- rep(NA, length(x))
+    prediction[x > 2.7] <- "spam"
+    prediction[x < 2.40] <- "nonspam"
+    prediction[(x >= 2.40 & x <=2.45)] <- "spam"
+    prediction[(x > 2.45 & x<= 2.70)] <- "nonspam"
+    return(prediction)
+}
+table(rule1(smallSpam$capitalAve), smallSpam$type)
+
+
+# This is a "perfect" predictor for the train data set.
+
+## Prediction Rule 2:
+# spam if CapitalAve > 2.80
+# nonspam if CapitalAve <=2.80
+
+rule2 <- function(x){
+    prediction <- rep(NA, length(x))
+    prediction[x>2.8] <- "spam"
+    prediction[x <= 2.8] <- "nonspam"
+    return(prediction)
+}
+table(rule2(smallSpam$capitalAve), smallSpam$type)
+```
+Now, we can check performance on the complete spam dataset:
+
+```{r}
+table(rule1(spam$capitalAve), spam$type)
+table(rule2(spam$capitalAve), spam$type)
+
+## Accuracy
+mean(rule1(spam$capitalAve)== spam$type)
+mean(rule2(spam$capitalAve)== spam$type)
+
+sum(rule1(spam$capitalAve) == spam$type)
+sum(rule2(spam$capitalAve) == spam$type)
+```
+Rule 2 is a easiest way to predict, and it performs *slightly* better because of **overfitting**.
+
+
+## Prediction study design
+
++ Define your error rate
++ Split data into: training, testing, validation
++ On the training set pick features: use cross-validation
++ On the training set pick prediction function: use cross-validation
++ If no validation apply 1x to test set
++ If validation apply to test set and refine. Apply 1x to validation
+
+Some advices: 
+
+- Know the benchmark! 
+- Remember that [Kaggle](https://www.kaggle.com/) is used by professionals.
+- **Avoid small samples**. Suppose a binary outcome. One classifier in such scenarios (diseased/healthy, click on ad/not click on ad) is just flipping a coin. Then, if the sample size is $n = 1$ there is a chance of $50%$ of $100%$ accuracy. If $n = 2$ the chance is $25%$ and, with $n = 10$, $0.10%$. Accuracy in this case is $\left(\frac{1}{2}\right)^{\text{sample size}}$
+
+
+Rules of thumb:
+
+- If you have a large sample size --> 60% training, 20% test, 20% validation.
+- If you have a medium sample size --> 60% training, 40% testing
+- If you have a small sample size --> do cross validation and report caveat of small sample size.
+
+
+## Types of errors
+
+In general, **positive** = identified and **negative** rejected. Therefore:
+
+|        | Positive               | Negative             |
+|--------|------------------------|----------------------|
+| True   | Correctly identified   | Correctly rejected   |
+| False  | Incorrectly identified | Incorrectly rejected |
+
+As an example, in medical testing that means
+
+- True positive: sick people correctly diagnosed as sick
+- False positive: healthy people incorrectly identified as sick
+- True negative: healthy people correctly identified as healthy
+- False negative: sick people incorrectly identified as healthy
+
+
+With this in mind, the key quantities are defined as follows:
+
+- **Sensitivity** $\Longrightarrow \mathbb{P}\left(\text{positive test} \vert \text{disease}\right)$
+- **Specificity** $\Longrightarrow \mathbb{P}\left(\text{negative test} \vert \text{healthy}\right)$
+- **Positive predictive value** $\Longrightarrow \mathbb{P}\left(\text{disease} \vert \text{positive test}\right)$
+- **Negative Predictive value** $\Longrightarrow \mathbb{P}\left(\text{healthy} \vert \text{negative test}\right)$
+- **Accuracy** $\Longrightarrow \mathbb{P}\left(\text{correct outcome}\right)$
+
+
+### Screening tests
+
+Assume that some disease has a 0.1% of prevalence in the population. Assume we have a test kit that works with sensitiviy = specificity = 99%. What is the probability of  a person having the disease **given the test result is positive**, if we randomly select a subject from
+
+- the general population?
+- a high risk sub-population with 10% disease prevalence?
+
+For the case 1: 
+
+- **Sensitivity** $\Longrightarrow \mathbb{P}\left(\text{positive test} \vert \text{disease}\right) = \frac{99}{99+1} = 0.99$
+- **Specificity** $\Longrightarrow \mathbb{P}\left(\text{negative test} \vert \text{healthy}\right) = \frac{98901}{98901+999} = 0.99$
+- **Positive predictive value** $\Longrightarrow \mathbb{P}\left(\text{disease} \vert \text{positive test}\right) = \frac{99}{99+999} \approx 0.0901 \Longrightarrow 9\%$
+- **Negative Predictive value** $\Longrightarrow \mathbb{P}\left(\text{healthy} \vert \text{negative test}\right) = \frac{98901}{1 + 98901} \approx 0.9999 \Longrightarrow 99\%$
+- **Accuracy** $\Longrightarrow \mathbb{P}\left(\text{correct outcome}\right) = \frac{99 + 98901}{99+1+98901+999} = 0.99$
+
+whereas for the case 2:
+
+- **Sensitivity** $\Longrightarrow \mathbb{P}\left(\text{positive test} \vert \text{disease}\right) = \frac{9900}{9900+100} = 0.99$
+- **Specificity** $\Longrightarrow \mathbb{P}\left(\text{negative test} \vert \text{healthy}\right) = \frac{89100}{89100 + 900} = 0.99$
+- **Positive predictive value** $\Longrightarrow \mathbb{P}\left(\text{disease} \vert \text{positive test}\right) = \frac{9900}{9900+900} \approx 0.9166 \Longrightarrow 91.66\%$
+- **Negative Predictive value** $\Longrightarrow \mathbb{P}\left(\text{healthy} \vert \text{negative test}\right) = \frac{89100}{89100+100} \approx 0.9988 \Longrightarrow 99\%$
+- **Accuracy** $\Longrightarrow \mathbb{P}\left(\text{correct outcome}\right) = \frac{9900 + 89100}{9900 + 100 + 900 + 89100} = 0.99$
+
+The *surprisingly* difference is that in the first case *you are predicting a rare event* and have to be aware of it (check that in case 1, all positive tests correspond to 99 people with the disease and 999 healthy people, with 99 < 999) whereas in case 2, the relation is 9900 > 900. This goes back to the idea of knowing what population you are sampling from when building a predictive model.
+
+Recall that we have those results even though the screening mechanisms are relatively good. 
+
+For **continuous data** the **mean squared error (MSE)** and the **root mean squared error (RSME)** are used. They are defined as
+
+\[
+    MSE = \dfrac{1}{n}\sum_{i=1}^{n}{\left(Prediction_i - Truth_i\right)^2} 
+\]
+
+
+## Receiver Operating Characteristic
+
+Since in binary classification you are predicting one of two categories (alive/dead, click on ad/ don't click) but your predictions are often quantitative (probability of being alive/ prediction on a scale from 1 to 10) the *cutoff* you choose gives different results.
+
+ROC curves are plotted considering the $y$ axis as 1-Specificity, they call this **true positive rate** (*sensitivity*) and the $x$ axis as **false positive rate** and equals to $1-Specificity$.
+
+
+One way to compare ROC curves is using the area under the curve for different algorithms. If the **Area Under Curve (AUC)** equals to 0.5, it is regarded as *random guessing* whereas if AUC = 1, it is a perfect classifier. In general, AUC > 0.8 is considered "good".
+
+
+## Cross Validation
+
+As the accuracy on the training set is optimistic, a better estimation might be obtained from an independent set (test set accuracy). Nevertheless, we can not use the test set when building the model or it would become part of the training set *Mamma mia!*. So, we estimate the test set accuracy with the training set. This is the **key idea** of **cross valudation**.
+
+The approach is as follows:
+
+- Use the training set
+- Split it into training/test sets
+- Build a model on the training set
+- Evaluate the model on the test set
+- Repeat and average the estimated errors.
+
+Used for:
+
+- Picking variables to include in the model
+- Choose the type of prediction function to use
+- Picking the parameters in the prediction function
+- Comparing different predictors
+
+In order to do this **random subsampling** is used: randomly subset the training dataset into testing/training sets several times. Another way to do this is to use **K-fold**: divide the data into folds and use some of the folds for training/test. **Leave one out** is also a way to do this: construct the training set using all but one sample, and use the sample left out for the testing part.
