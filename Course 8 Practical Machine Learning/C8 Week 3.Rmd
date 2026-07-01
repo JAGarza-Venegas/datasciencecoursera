@@ -1,0 +1,481 @@
+---
+title: "C8 Week 3"
+author: "JAGV"
+date: "2026-01-21"
+output: html_document
+---
+
+# Predicting with trees
+
+## Key ideas
+
+- Iteratively split variables into groups
+- Evaluate "homogeneity" **within** each group
+- Split again if necessary
+
+### Pros
+
+- Easy to interpret
+- Better performance in non-linear settings
+
+### Cons
+
+- Without pruning/cross-validation can lead to **overfitting**
+- Harder to estimate uncertainty
+- Results may be variable
+
+An example of a decision tree is here: [USA presidential election](http://graphics8.nytimes.com/images/2008/04/16/us/0416-nat-subOBAMA.jpg) 
+
+
+## Basic algorithm
+
+1. Start with all variables in one group
+2. Find the variable/split that best separates the outcomes
+3. Divide the data into two gropus (*leaves*) on that split (*node*)
+4. Within each split, find the best variable/split that separates the outcome
+5. Continue until the groups are too small or sufficiently *pure* (homogeneous)
+
+## Measures of impurity
+
+In order to measure the homogeneity, we have some **measures of impurity**
+
+\[
+    \hat{p}_{mk} = \frac{1}{N_m}\sum_{x_i \in \text{Leaf}_m}I\left(y_i = k\right)
+\]
+
+where 
+
+- $\hat{p}_{mk}$ is the estimated probability of the objects in group $m$ to take on the classification $k$
+- $m$ is the number of leaves
+- $k$ is an index for the class
+- $N_m$ is the number of objects in the leaf $m$
+- $I\left(y_i=k\right)$ is the indicator function that counts the number of times that a particular class appears in the leaf $m$. 
+
+Then we have the following measures of impurity:
+
+- **Misclassification error**: 
+    \[
+        1 - \hat{p}_{mk\left(m\right)}
+    \]
+    where $k\left(m\right)$ stands for the most common $k$ (classification/group). Here
+    + $0$ means *perfect purity*
+    + $0.5$ means *no purity*
+- **Gini index**:
+    \[
+        \sum_{k \neq k'}\hat{p}_{mk}\hat{p}_{mk'} = \sum_{k=1}^{m}\hat{p}_{mk}\left(1-\hat{p}_{mk}\right) = 1-\sum_{k=1}^{m}\hat{p}_{mk}^2
+    \]
+    Here:
+    + $0 =$  *perfect purity*
+    + $0.5 =$ *no purity*
+- **Deviance/information gain**:
+\[
+    -\sum_{k=1}^{m}\hat{p}_{mk}log_{e}\left(\hat{p}_{mk}\right)
+    \\
+    -\sum_{k=1}^{m}\hat{p}_{mk}log_{2}\left(\hat{p}_{mk}\right)
+\]
+where base of the logarithm used in **deviance** is $e$ whereas for **information gain** is the number $2$
+
+Let's take a look at some examples. Here, imagine that we are dealing with a variable trying to **split the dots into blue and red dots**. Also, that we are on a leaf where 15 out of 16 dots are blue and 1 out of 16 are red.
+
+```{r fig.height=3,fig.width=4,echo=FALSE,fig.align="center"}
+par(mar=c(0,0,0,0)); set.seed(1234); x = rep(1:4,each=4); y = rep(1:4,4)
+plot(x,y,xaxt="n",yaxt="n",cex=3,col=c(rep("blue",15),rep("red",1)),pch=19)
+```
+
+Here, the measures of impurity are calculated as follows:
+
+- **Misclassification error**: $1 - \frac{15}{16} = \frac{1}{16} = 0.06$ (almost *perfect purity*)
+- **Gini index**: $1 - \left[\left(\frac{1}{16}\right)^2 + \left(\frac{15}{16}\right)^2\right] = 0.12$
+- **Information gain**: $-\left\{\frac{1}{16}\log_2\left(\frac{1}{16}\right) + \frac{15}{16}\log_2\left(\frac{15}{16}\right)\right\} = 0.34$
+
+
+```{r,fig.height=3,fig.width=4,echo=FALSE,fig.align="center"}
+par(mar=c(0,0,0,0)); 
+plot(x,y,xaxt="n",yaxt="n",cex=3,col=c(rep("blue",8),rep("red",8)),pch=19)
+```
+
+Here, the measures of impurity are calculated as follows:
+
+- **Misclassification error**: $1 - \frac{1}{2} = \frac{1}{2} = 0.5$ (*no pure*)
+- **Gini index**: $1 - \left[\left(\frac{1}{2}\right)^2 + \left(\frac{1}{2}\right)^2\right] = \frac{1}{2} = 0.5$
+- **Information gain**: $-\left\{\frac{1}{2}\log_2\left(\frac{1}{2}\right) + \frac{1}{2}\log_2\left(\frac{1}{2}\right)\right\} = 1$
+
+
+
+Let's move to another example using the `iris` dataset
+
+```{r}
+data(iris)
+library(ggplot2)
+names(iris)
+table(iris$Species)
+```
+### Create training and test sets
+
+```{r}
+library(caret)
+inTrain <- createDataPartition(y = iris$Species, p = 0.7, list = FALSE)
+training <- iris[inTrain,]
+testing <- iris[-inTrain,]
+dim(training)
+dim(testing)
+```
+### Plotting the sepal width versus petal width
+
+```{r}
+qplot(Petal.Width, Sepal.Width, colour = Species, data = training)
+```
+
+Nice! We can see by the naked eye three clusters according to the Species. 
+
+```{r}
+library(caret)
+modFit <- train(Species ~ ., method = "rpart", data = training)
+print(modFit$finalModel)
+```
+It is useful to plot the tree. Let's do that
+
+```{r}
+plot(modFit$finalModel, uniform = TRUE, main = "Classification tree")
+text(modFit$finalModel, use.n = TRUE, all = TRUE, cex= 0.8)
+```
+The tree is ugly (like me) so we can make a prettier plot.
+
+```{r}
+library(rattle)
+fancyRpartPlot(modFit$finalModel)
+```
+
+### Predicting new values
+
+```{r}
+predict(modFit, newdata = testing)
+```
+## Notes and further reading
+
+- Classification trees are non-linear models
+    + They use interactions between variables
+    + Data transformations may be less important (monotone transformations)
+    + Trees can also be used for regression problems (continuous outcome)
+- Note that there are multiple tree building options in `R` both in `caret` package (`party`, `rpart`) and out of the `caret` package - `tree`
+* [Introduction to statistical learning](http://www-bcf.usc.edu/~gareth/ISL/)
+* [Elements of Statistical Learning](http://www-stat.stanford.edu/~tibs/ElemStatLearn/)
+* [Classification and regression trees](http://www.amazon.com/Classification-Regression-Trees-Leo-Breiman/dp/0412048418)
+
+# Bagging
+
+## Introduction
+
+Bootstrap Aggregating = Bagging. The basic idea is two fold:
+
+* Resample cases and recalculate predictions
+* Average or majority vote
+
+Notes: 
+
++ Similar bias
++ Reduced variance
++ More useful for non-linear functions
+
+```{r}
+ozone <- read.table("https://web.stanford.edu/~hastie/ElemStatLearn/datasets/ozone.data", sep = '\t', header=TRUE)
+ozone <- ozone[order(ozone$ozone),]
+head(ozone)
+```
+
+The idea is to predict temperature in function of ozone.
+
+## Bagged loess
+
+The first thing to do is just show an example fo how this works
+
+```{r, warning = FALSE}
+ll <- matrix(NA, nrow = 10, ncol = 155)
+for(i in 1:10){
+    # Resampling. Indexes are stored at ss
+    ss <- sample(1:dim(ozone)[1], replace = T)
+    # Subset according to the indexes
+    ozone0 <- ozone[ss,]
+    # Reorder the ozone levels for this sample
+    ozone0 <- ozone0[order(ozone0$ozone),]
+    # Fit a loess curve (similar to spline)
+    loess0 <- loess(temperature ~ ozone, data = ozone0, span = 0.2)
+    ll[i,] <- predict(loess0, newdata = data.frame(ozone = 1:155))
+}
+```
+
+```{r}
+plot(ozone$ozone, ozone$temperature, pch = 19, cex = 0.5)
+for(i in 1:10){
+    lines(1:155, ll[i,], col = "grey", lwd = 2)
+}
+lines(1:155, apply(ll,2,mean), col = "red", lwd = 2)
+```
+### Bagging in caret
+
+Some models perform bagging for you (Thank God!). In `train` function consider `method` options:
++ `bagEarth`
++ `treebag`
++ `bagFDA`
+
+Alternatively you can bag any model you choose using the `bag` function
+
+An advanced use might looks like
+
+```{r}
+predictors <- data.frame(ozone = ozone$ozone)
+temperature <- ozone$temperature
+treebag <- bag(predictors, temperature, B = 10, 
+               bagControl = bagControl(fit = ctreeBag$fit,
+                                       predict = ctreeBag$pred,
+                                       aggregate = ctreeBag$aggregate))
+
+plot(ozone$ozone, ozone$temperature, col = "lightgrey", pch = 19)
+points(ozone$ozone, predict(treebag$fits[[1]]$fit,predictors), pch = 19, col = "red")
+points(ozone$ozone, predict(treebag,predictors), pch = 19, col = "blue")
+```
+### Notes and further resources
+
+- Bagging is most useful for non-linear models
+- Often used with trees - an extension is *random forests*
+- Several models use bagging in `caret`'s `train` function
+* [Bagging](http://en.wikipedia.org/wiki/Bootstrap_aggregating)
+* [Bagging and boosting](http://stat.ethz.ch/education/semesters/FS_2008/CompStat/sk-ch8.pdf)
+* [Elements of Statistical Learning](http://www-stat.stanford.edu/~tibs/ElemStatLearn/)
+
+
+# Random forests
+
+## Basic ideas
+
+1. Bootstrap samples
+2. At each split, bootstrap variables
+3. Grow multiple trees and vote
+
+#### Pros
+
+1. Accuracy
+
+#### Cons
+
+1. Speed: algorithm can be slow as it processes large number of trees)
+2. Interpretability: it is hard to interpret as we have a large number of splits and nodes
+3. Overfitting: it is difficult to know which tree is causing over-fitting
+4. **Note**: it is **extremely important** to use cross-validation when running random forest algorithms
+
+## Example: iris dataset
+
+Let's use the `iris` data set as an example
+
+```{r}
+data(iris)
+library(ggplot2)
+library(caret)
+inTrain <- createDataPartition(y = iris$Species, p = 0.7, list = FALSE)
+training <- iris[inTrain,]
+testing <- iris[-inTrain,]
+
+#### Fitting the model
+modFit <- train(Species ~., data = training, method = "rf", prox = TRUE)
+modFit
+```
+#### Getting a single tree
+
+```{r}
+library(randomForest)
+getTree(modFit$finalModel,k=2)
+```
+
+#### Class "centers"
+
+```{r}
+irisP <- classCenter(training[,c(3,4)], training$Species, modFit$finalModel$prox)
+irisP <- as.data.frame(irisP)
+irisP$Species <- rownames(irisP)
+p <- qplot(Petal.Width, Petal.Length, col = Species, data = training)
+p + geom_point(aes(x = Petal.Width, y = Petal.Length, col = Species), size = 5, shape = 4, data = irisP)
+```
+
+#### Predicting new values
+
+```{r}
+pred <- predict(modFit, testing)
+testing$predRight <- pred==testing$Species
+table(pred,testing$Species)
+qplot(Petal.Width, Petal.Length, colour = predRight, data = testing, main = "newdata Predictions")
+```
+
+## Notes and further reading
+
+- Random forests are usually one of the two top performing algorithms along with boosting in prediction contests
+- random forests are difficult to interpret but often **very accurate**
+- Care should be taken to avoid overfitting (see [rfcv](http://cran.r-project.org/web/packages/randomForest/randomForest.pdf) funtion)
+* [Random forests](http://www.stat.berkeley.edu/~breiman/RandomForests/cc_home.htm)
+* [Random forest Wikipedia](http://en.wikipedia.org/wiki/Random_forest)
+* [Elements of Statistical Learning](http://www-stat.stanford.edu/~tibs/ElemStatLearn/)
+
+
+# Boosting
+
+## Basic idea
+
+1. Take lots of (possibly) weak predictors
+2. Weight them and add them up
+3. Get a stronger predictor
+
+## Basic idea behind boosting
+
+1. Start with a set of classifiers $h_1, \dots, h_k$
+    + Examples: all possible trees, regression models, cutoffs, etc.
+2. Create a classifier that combines classification functions: $f\left(x\right) = sgn\left(\sum_{i=1}^{k}{\alpha_ih_i\left(x\right)}\right)$
+    + The goal is to *minimize error* (on training set)
+    + Iterative, select one $h$ at each step
+    + Calculate weights based on errors
+    + Upweight missed classifications and select next $h$
+    
+    
+## Boosting in R
+
+- Boosting can be used with any subset of classifiers
+- One large subclass is [*gradient boosting*](http://en.wikipedia.org/wiki/Gradient_boosting)
+- `R` has multiple boosting libraries. Differences include the choice of basic classifications functions and combination rules: `gbm` (boosting with trees), `mboost` (model based boosting), `ada` (statistical boosting based on additive logistic regression), `gamBoost` (for boosting generalized additive models)
+- Most of these are available in `caret` package
+
+#### Wage example
+
+```{r}
+library(ISLR)
+data(Wage)
+library(ggplot2)
+library(caret)
+Wage <- subset(Wage, select = -c(logwage))
+inTrain <- createDataPartition(y = Wage$wage, p = 0.7, list = FALSE)
+training <- Wage[inTrain,]
+testing <- Wage[-inTrain,]
+```
+
+```{r, warning = FALSE}
+library(gbm)
+modFit <- train(wage ~ ., method = "gbm", data = training, verbose = FALSE)
+print(modFit)
+qplot(predict(modFit, testing), wage, data = testing)
+```
+
+
+# Model based prediction
+
+## Basic idea
+
+1. Assume the data follow a probabilistic model
+2. Use Bayes' theorem to identify optimal classifiers
+
+#### Pros
+
++ Can take advantage of structure of the data
++ May be computationally convenient
++ Are reasonably accurate on real problems
+
+#### Cons
+
++ Make additional assumptions about the data
++ When the model is incorrect you may get reduced accuracy
+
+## Model based approach
+
+1. The goal is to build *parametric* model for conditional distribution $\mathbb{P}\left(Y = k \vert X = x\right)$
+2. A typical approach is to apply Bayes theorem:
+\[
+    \mathbb{P}\left(Y = k \vert X = x\right) = \dfrac{\mathbb{P}\left(X = x \vert Y = k\right)\mathbb{P}\left(Y=k\right)}{\sum_{j = 1}^{K}{\mathbb{P}\left(X = x \vert Y = j\right)\mathbb{P}\left(Y=j\right)}}
+\]
+\[
+    \mathbb{P}\left(Y = k \vert X = x\right) = \dfrac{f_k\left(x\right)\pi_k}{\sum_{j = 1}^{K}{f_j\left(x\right)\pi_j}}
+\]
+3. Typically prior probabilities $\pi_k$ are set **in advance**
+4. A common choice for $f_k\left(x\right)$ is a Gaussian distribution: $f_k\left(x\right) = \dfrac{1}{\sigma_k\sqrt{2\pi}}e^{-\frac{\left(x-\mu_k\right)^2}{\sigma_k^2}}$
+5. Estimate the parameters $\left(\mu_k, \sigma_k^2\right)$ from the data
+6. Classify to the class with the highest value of $\mathbb{P}\left(Y=k \vert X = x\right)$
+
+#### Classifying using the model
+
+A range of models use this approach
+
++ Linear discriminant analysis assumes $f_k\left(x\right)$ is multivariate Gaussian with same covariances
++ Quadratic discriminant analysis assumes $f_k\left(x\right)$ is multivariate Gaussian with different covariances
++ **Model based prediction** assumes more complicated versions of the covariance matrix
++ Naive Bayes assumes independence between features for model building
+
+#### Linear discriminant analysis
+
+This is used because of the following relationship:
+
+When we consider the (log) ratio of the probabilities of two classes:
+\[
+    log\left(\dfrac{\mathbb{P}\left(Y = k \vert X = x\right)}{\mathbb{P}\left(Y = j \vert X = x\right)}\right) = log\left(\dfrac{f_k\left(x\right)}{f_j\left(x\right)}\right) + log\left(\dfrac{\pi_k}{\pi_j}\right)
+\]
+
+Since the logarithm is a monotone function, it increases as the ratio increases. The relationship above also equals to
+
+\[
+    log\left(\dfrac{\pi_k}{\pi_j}\right) - \dfrac{1}{2}\left(\mu_k+\mu_j\right)^T\Sigma^{-1}\left(\mu_k + \mu_j\right) + x^T\Sigma^{-1}\left(\mu_k - \mu_j\right)
+\]
+
+
+## Discriminant function
+
+\[
+    \delta_k\left(x\right) = x^T\Sigma^{-1}\mu_k - \dfrac{1}{2}\mu_k\Sigma^{-1}\mu_k + log\left(\mu_k\right)
+\]
+
++ Decide on class based on $\hat{Y}\left(x\right) = \max_{k}\left\{\delta_k\left(x\right)\right\}$
++ We usually estimate parameters wih **Maximum Likelihood**
+
+
+## Naive Bayes
+
+The term *naive* is given to this method because we make an assumption: **independence** where this might not be the case in real life. Therefore, assuming independence we would have that 
+
+\[
+    \mathbb{P}\left(Y = k \vert X_1, \dots, X_m\right) = \dfrac{\pi_k\mathbb{P}\left(X_1, \dots, X_m\vert Y = k\right)}{\sum_{j = 1}^{K}{\mathbb{P}\left(X_1, \dots, X_m \vert Y = j\right)\pi_j}} \propto \pi_k\mathbb{P}\left(X_1, \dots, X_m\vert Y = k\right)
+\]
+
+Therefore
+
+\[
+    \mathbb{P}\left(X_1, \dots, X_m, Y = k\right) \approx \pi_k \mathbb{P}\left(X_1\vert Y = k\right)\mathbb{P}\left(X_2\vert Y = k\right) \dots \mathbb{P}\left(X_m\vert Y = k\right)
+\]
+
+
+#### Iris data as an example
+
+```{r}
+data(iris)
+library(ggplot2)
+names(iris)
+table(iris$Species)
+```
+```{r}
+inTrain <- createDataPartition(y = iris$Species, p = 0.7, list = FALSE)
+training <- iris[inTrain,]
+testing <- iris[-inTrain,]
+dim(training)
+dim(testing)
+```
+
+```{r}
+model_lda <- train(Species ~., data = training, method = "lda")
+model_nb <- train(Species ~., data = training, method = "nb")
+plda <- predict(model_lda, testing)
+pnb <- predict(model_nb, testing)
+table(plda,pnb)
+```
+
+#### Comparison of results
+
+```{r}
+equalPred <- (plda==pnb)
+qplot(Petal.Width, Petal.Length, colour = equalPred, data = testing)
+```
+
+They perform very similarly.
+
+**Note** all dataset from the `ElemStatLearn` can be downloaded from the page: [https://hastie.su.domains/ElemStatLearn/datasets/](https://hastie.su.domains/ElemStatLearn/datasets/)

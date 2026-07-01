@@ -1,0 +1,487 @@
+---
+title: "C8 Week 4"
+author: "JAGV"
+date: "2026-06-23"
+output: html_document
+---
+# Regularized regression
+
+Basic idea: fit a regression model and penaliza (or shrink) large coefficients. 
+
+**Pros**
+
+- Can help with the bias/variance tradeoff
+- Can help with model selection
+
+
+**Cons**
+
+- May be computationally demanding on large data sets
+- (In general) Does not perform as well as random forests and boosting.
+
+
+
+### A motivating example
+
+Assume the regression model
+
+\[
+    Y = \beta_0 + \beta_1x_1 + \beta_2x_2 + \varepsilon
+\]
+
+where $x_1$ and $x_2$ are nearly perfectly correlated (co-linear), Then, you can approximate this model by:
+
+\[
+    Y = \beta_0 + \left(\beta_1 + \beta_2\right)x_1 + \varepsilon
+\]
+
+
+The result is: 
+
+- You will get a good estimate of $Y$.
+- The estimate of $Y$ will be biased.
+- We may reduce variance in the estimate.
+
+
+Let's take a look at one example: `prostate cancer`
+
+```{r}
+prostate <- read.csv("https://web.stanford.edu/~hastie/ElemStatLearn/datasets/prostate.data", sep="\t",head=T,row.names=1)
+str(prostate)
+```
+**Note** the code for this example comes from *Hector Corrada Bravo's Practical Machine Learning Course* to demonstrate the behaviour of training and test errors, the `prostate` dataset from *Elements of Statistical Learning* is used.
+
+```{r}
+set.seed(1, sample.kind = "Rounding")
+# Define outcome "y" and predictors "x".
+covnames <- names(prostate[-(9:10)])
+y <- prostate$lpsa
+x <- prostate[,covnames]
+# Create test set predictors and outcomes.
+train.ind <- sample(nrow(prostate), ceiling(nrow(prostate))/2)
+y.test <- prostate$lpsa[-train.ind]
+x.test <- x[-train.ind,]
+# Create training set predictors and outcomes
+y <- prostate$lpsa[train.ind]
+x <- x[train.ind,]
+# Define p, the number of predictors
+p <- length(covnames)
+# Initialize the list of residual sum squares
+rss <- list()
+# Loop through each combination of predictors and build models
+for (i in 1:p) {
+    # Compute matrix for p choose i predictors for i = 1...p (i \times p matrix)
+    Index <- combn(p,i)
+    # Calculate RSS of each combination of predictors.
+    rss[[i]] <- apply(Index, 2, function(is) {
+        # Take each combination (or column of Index matrix) and create formula for regression
+        form <- as.formula(paste("y~", paste(covnames[is], collapse="+"), sep=""))
+        # run LR with combination of predictors on training data
+        isfit <- lm(form, data = x)
+        # predict outcome for all training data points
+        yhat <- predict(isfit)
+        # Calculate RSS for predictions on Training data.
+        train.rss <- sum((y-yhat)^2)
+        # Predict outcome for all test data points
+        yhat <- predict(isfit, newdata = x.test)
+        # Calculate RSS for predictions on test data
+        test.rss <- sum((y.test - yhat)^2)
+        # Store each pair of training and test residual sum of squares as a list
+        c(train.rss, test.rss)
+    })
+}
+
+# Set up plot
+plot(1:p, 1:p, type = "n", ylim = range(unlist(rss)), xlim = c(0,p), 
+     xlab = "Number of predictors", ylab = "RSS", 
+     main = "Prostate Cancer Data - Training vs Test RSS")
+# Add data points for training and test RSS
+for( i in 1:p) {
+    # Plot training residual sum squares in blue
+    points(rep(i, ncol(rss[[i]])), rss[[i]][1,], col = "blue", cex = 0.5)
+    # Plot test residual sum squares in red
+    points(rep(i, ncol(rss[[i]])), rss[[i]][2,], col = "red", cex = 0.5)
+}
+# Find the minimum training RSS for each combination of predictors
+minrss <- sapply(rss, function(x) min(x[1,]))
+#Plot line through the minimum training RSS data points in blue
+lines((1:p), minrss, col = "blue", lwd = 1.7)
+# Find the moinimum test RSS for each combination of predictors 
+minrss <- sapply(rss, function(x) min(x[2,]))
+#Plot line through the minimum test RSS data points in red
+lines((1:p), minrss, col = "red", lwd = 1.7)
+# Add legend
+legend("topright", c("Train", "Test"), col = c("blue", "red"), pch = 1)
+```
+
+From here, we can see that the train set error always goes down, whereas the test set error exhibits a typical pattern: it goes down, hit a plateau and then goes back up again. This is because we are overfitting the data in the training set. 
+
+
+## Model selection approach: 
+
+### Split samples
+
+No method better when data/computation time permits it. The approach is as follows:
+
+- Divide data into training/test/validation sets
+- Treat validation as test data, train all competing models on the trin data and pick the best one on validation
+- To appropriately assess performance on new data apply to test set
+- You may re-split and reperform steps 1-3
+
+Two common problems
+
+- Limited data
+- Computational complexity
+
+
+### Decomposing expected prediction error
+
+Assume $Y_i = f\left(X_i\right) + \varepsilon_i$, then the expected prediction error is given by $EPE\left(\lambda\right) = E\left[\left\{Y - \hat{f}_{\lambda}\left(X\right)\right\}^2\right]$. 
+
+Suppose that $\hat{f}_{\lambda}$ is the estimate from teh training data and look at a new data point $X = x^*$. Then 
+
+\[
+    E\left[\left\{Y - \hat{f}_{\lambda}\left(x^+\right)\right\}^2\right] = \underbrace{\sigma^2}_{\text{Irreducible}} + \underbrace{\left\{E\left[\hat{f}_{\lambda}\left(x^+\right)\right] - f\left(x^+\right)\right\}^2}_{\text{Bias}^2} + \underbrace{var\left[\hat{f}_{\lambda}\left(x_0\right)\right]}_{\text{Variance}}
+\]
+
+### Hard thresholding
+
+When having less observations (samples) than covariates, the design matrix will be singular. Therefore, as a solution to this, for the model $Y = f\left(X\right) + \varepsilon$ set $\hat{f}_{\lambda}\left(x\right) = x'\beta$ and constrain only $\lambda$ of the coefficients to be nonzero. 
+
+Selection problem is after choosing $\lambda$ figure out which $p-\lambda$ coefficients to make nonzero.
+
+#### Regularization for regression
+
+
+If the $\beta_j$'s are unconstrained:
+
+- They can explode
+- And hence are susceptible to very high variance 
+
+To control variance, we might regularize/shrink the coefficients
+
+\[
+    PRSS\left(\beta\right) = \sum_{j=1}^{n}{\left(Y - \sum_{i=1}^{m}{\beta_{1i}X_{ij}}\right)^2} + P\left(\lambda;\beta\right)
+\]
+where $PRSS$ is a penalized form of the sum of squares. Things that are commonly looked for:
+
+- Penalty reduces complexity and variance
+- Penalty respects structure of the problem
+
+
+### Ridge regression
+
+The problem is stated as solving
+
+\[
+    \sum_{i=1}^{N}{\left(y_i - \beta_0 - \sum_{j=1}^{p}{x_{ij}\beta_j}\right)}^2 + \lambda\sum_{j=1}^{p}\beta_j^2
+\]
+which is equivalent to solving
+
+\[
+    \sum_{i=1}^{N}{\left(y_i - \beta_0 - \sum_{j=1}^{p}{x_{ij}\beta_j}\right)}^2
+\]
+
+subject to $\sum_{j=1}^{p}{\beta_j^2} \leq s$ where $s$ is inversely proportional to $\lambda$. Inclusion of $\lambda$ makes the problem non-singular even if $X'X$ is not invertible.
+
+
+#### Tuning parameter $\lambda$
+
+We can see that $\lambda$ controls the size of the coefficients and the amount of **regularization**. Moreover, as $\lambda\rightarrow 0$, we obtain the LS solution, whereas as $\lambda\rightarrow \infty$ we have $\hat\beta = 0$.
+
+So, taking the parameter can be done with cross-validation or techniques that help to find the optimal tradeoff of bias for variance.
+
+
+
+### Regularized Regression - LASSO (Least Absolute Shrinkage and Selection Operator) regression
+
+It is similar to **ridge regression**, with slightly different penalty term:
+
+\[
+    \sum_{i=1}^{N}{\left(y_i - \beta_0 - \sum_{j=1}^{p}{x_{ij}\beta_j}\right)}^2 + \lambda\sum_{j=1}^{p}\left|\beta_j\right|
+\]
+which is equivalent to solving
+
+\[
+    \sum_{i=1}^{N}{\left(y_i - \beta_0 - \sum_{j=1}^{p}{x_{ij}\beta_j}\right)}^2
+\]
+
+subject to constraint $\sum_{j=1}^{p}{\left|\beta_j\right|} \leq s$ where $s$ is inversely proportional to $\lambda$. 
+**NOTE**: LASSO effectively performs model selection (choose subset of predictors) while shrinking other coefficients, whereas **ridge regression** only shrinks the coefficients.
+
+
+
+# Combining predictors
+
+Some key ideas on this topic:
+
+- You can combine classifiers by averaging/voting
+- Combining classifiers improves accuracy
+- Combining classifiers reduces interpretability
+- Boosting, bagging, and random forests are variants on this theme
+
+
+## Real-life examples.
+
+### Netflix competition
+
+[Netflix Prize](https://web.archive.org/web/20120507052942/http://www.netflixprize.com/leaderboard)
+
+### Heritage health prize - Progress Prize 1
+
+(broken links)
+
+[Market Makers](https://kaggle2.blob.core.windows.net/wiki-files/327/e4cd1d25-eca9-49ca-9593-b254a773fe03/Market%20Makers%20-%20Milestone%201%20Description%20V2%201.pdf)
+
+[Mestrom](https://kaggle2.blob.core.windows.net/wiki-files/327/09ccf652-8c1c-4a3d-b979-ce2369c985e4/Willem%20Mestrom%20-%20Milestone%201%20Description%20V2%202.pdf)
+
+
+## The basic intuition behind majority vote
+
+Suppose we have 5 completely independent classifiers. If accuracy of each is $70\%$, then, the **majority vote accuracy** (the probability of the majority of the models achieving $70\%$ at the same time) is:
+
+\[
+    \text{Majority vote accuracy, MVA} = \mathbb{P}\left(\text{3 correct, 2 wrong}\right) + \mathbb{P}\left(\text{4 correct, 1 wrong}\right) + \mathbb{P}\left(\text{5 correct}\right)
+\]
+
+therefore, under the independent assumption, this might be calculated using the binomial distribution. So
+
+
+\[
+    \text{MVA} = 10\left(0.7\right)^3\left(0.3\right)^2 + 5\left(0.7\right)^4\left(0.2\right) + \left(0.7\right)^5 \approx 83.7
+\]
+
+**Note**: using 101 classifiers, this quantity becomes $99.9\%$.
+
+The approaches for combining classifiers includes:
+
+- For **similar** classifiers: bagging, boosting and random forests
+- For **different** classifiers: model stacking and model ensembling
+
+
+Let's take a look at one example: Wage data
+
+```{r}
+library(ISLR)
+data(Wage)
+library(ggplot2)
+library(caret)
+Wage <- subset(Wage, select = -c(logwage))
+
+# Create a building data set and validation set
+
+inBuild <- createDataPartition(y = Wage$wage, p = 0.7, list = FALSE)
+
+validation <- Wage[-inBuild, ]
+buildData <- Wage[inBuild,]
+
+inTrain <- createDataPartition(y = buildData$wage, p = 0.7, list = FALSE)
+training <- buildData[inTrain,]
+testing <- buildData[-inTrain,]
+```
+
+```{r}
+dim(training)
+dim(testing)
+dim(validation)
+```
+Build two different models
+
+```{r}
+mod1 <- train(wage ~., method = "glm", data = training)
+mod2 <- train(wage ~., method = "rf", data = training, trControl = trainControl(method = "cv"), number = 3)
+```
+
+
+Prediction on the testing set
+
+```{r}
+pred1 <- predict(mod1, testing)
+pred2 <- predict(mod2, testing)
+qplot(pred1,pred2, colour = wage, data = testing)
+```
+
+Now, lest fit a model that combines predictors
+
+```{r}
+predF <- data.frame(pred1,pred2, wage = testing$wage)
+combModFit <- train(wage ~., method = "gam", data = predF)
+combPred <- predict(combModFit, predF)
+```
+
+Look at the testing errors
+
+```{r}
+sqrt(sum((pred1 - testing$wage)^2))
+sqrt(sum((pred2 - testing$wage)^2))
+sqrt(sum((combPred - testing$wage)^2))
+```
+
+Now let's try it out on the validation set
+
+```{r}
+pred1V <- predict(mod1, validation)
+pred2V <- predict(mod2, validation)
+predVDF <- data.frame(pred1 = pred1V, pred2 = pred2V)
+combPredV <- predict(combModFit, predVDF)
+```
+
+Look at the errors on validation
+
+```{r}
+sqrt(sum((pred1V - validation$wage)^2))
+sqrt(sum((pred2V - validation$wage)^2))
+sqrt(sum((combPredV - validation$wage)^2))
+```
+It is lower with the combined models even on the validation set.
+
+
+## Final comments
+
+Recall: **scalability matters**: One important point to keep in mind when doing model ensembling is that this can lead to increases in computational complexity. So, it turns out that even though **Netflix has paid a million dollars** to the team that won the prize, **the solution (the millionaire dollar solution) was never actually implemented** because it was too computationaly intensive to apply to specific data sets.
+
+
+# Forecasting
+
+Let's talk about forecasting, which is the name used for *predictions* in time series data. Financial data is a kind of time series data, as we can see in the following link: [Google Finance](https://www.google.com/finance/beta)
+
+The main difference is that **data is time-dependent**. Here, we are going to look for some components: 
+
+- Trends - long term increase or decrease.
+- Seasonal patterns - patterns related to time (week, month, year, etc.)
+- Cycles - patterns that rise and fall periodically
+
+Therefore, the approach of *subsampling* into train/test data sets is more complicated. Note: a similar problem arises when dealing with **spatial data** for the same reasons: dependency between nearby observations and location specific effects. 
+
+Typically, the goal is to predict one or more observations into the future (which in regression would be **extrapolation**). All standard predictions can be used (with caution/sense!).
+
+Be careful with spurious correlation, as this kxcd joke shows with geographical maps: [http://xkcd.com/1138/](http://xkcd.com/1138/) (red areas are the high density in population places).
+
+
+Let's take a look at an example.
+
+```{r}
+#install.packages("quantmod")
+library(quantmod)
+
+from.dat <- as.Date("01/01/08", format = "%m/%d/%y")
+to.dat <- as.Date("12/31/13", format = "%m/%d/%y")
+getSymbols("GOOG", src = "yahoo", from = from.dat, to = to.dat)
+head(GOOG)
+```
+
+```{r}
+mGoog <- to.monthly(GOOG)
+googOpen <- Op(mGoog)
+ts1 <- ts(googOpen, frequency = 12)
+plot(ts1, xlab = "Years+1", ylab = "GOOG")
+```
+
+
+One way to analyze time series data, is to decompose into:
+
+- **Trend**: Consistently increasing pattern over time.
+- **Seasonal**: when there is a pattern over a fixed period of time that recurs. 
+- **Cyclic**: when data rises and falls over non fixed periods. 
+
+We can use the function `decompose` to decompose (duh!) a time series into its parts:
+
+```{r}
+plot(decompose(ts1), xlab = "Years+1")
+```
+
+### Training and test sets
+
+```{r}
+ts1Train <- window(ts1, start = 1, end = 5)
+ts1Test <- window(ts1, start = 5, end = 7)
+ts1Train
+ts1Test
+```
+
+## Forecasting with simple moving average.
+
+\[
+    \hat{Y}_t = \dfrac{1}{2k+1}\sum_{j = -k}^{k}{Y_{t+j}}
+\]
+
+This is a moving average of order $k$, centered.
+
+```{r}
+# install.packages("forecast")
+library(forecast)
+plot(ts1Train)
+lines(ma(ts1Train, order = 3), col = "red")
+```
+
+## Forecasting with exponential smoothing
+
+Simple exponential smoothing. 
+
+\[
+    \hat{Y}_{t+1} = \alpha Y_t + \left(1-\alpha) \hat{Y}_t 
+\]
+
+
+```{r}
+ets1 <- ets(ts1Train, model = "MMM")
+fcast <- forecast(ets1)
+plot(fcast)
+lines(ts1Test, col = "red")
+```
+
+```{r}
+accuracy(fcast, ts1Test)
+```
+
+# Unsupervised prediction
+
+Supervised prediction is regarded as prediction where you know what the labels are. Unsupervised prediction is when you do not know the labels for prediction. In those cases, to build a predictor you
+
+- Create clusters
+- Name clusters
+- Build predictor for clusters
+
+so that, in a new data set, you predict clusters
+
+## Iris data set example
+
+```{r}
+data(iris)
+library(ggplot2)
+library(caret)
+inTrain <- createDataPartition(y = iris$Species, p = 0.7, list = FALSE)
+
+training <- iris[inTrain,]
+testing <- iris[-inTrain,]
+dim(training)
+dim(testing)
+```
+## Cluster with k-means
+
+```{r}
+kMeans1 <- kmeans(subset(training, select = -c(Species)), centers = 3)
+training$clusters <- as.factor(kMeans1$cluster)
+qplot(Petal.Width, Petal.Length, colour = clusters, data = training)
+```
+
+In this case, the clusters are closely related to the Species, but this is in general not the case. We can compare those clusters against the real labels
+
+```{r}
+table(kMeans1$cluster, training$Species)
+```
+### Build a predictor
+
+```{r}
+modFit <- train(clusters ~., data = subset(training, select = -c(Species)), method = "rpart")
+table(predict(modFit, training), training$Species)
+```
+
+### Apply on a test set
+
+```{r}
+table(predict(modFit, testing), testing$Species)
+```
+
+
+
