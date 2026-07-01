@@ -407,7 +407,7 @@ modelFit</code></pre>
 ## Resampling results:
 ## 
 ##   Accuracy   Kappa    
-##   0.9154338  0.8218032</code></pre>
+##   0.9157704  0.8241201</code></pre>
 <p>We can take a look at the final model:</p>
 <pre class="r"><code>modelFit$finalModel</code></pre>
 <pre><code>## 
@@ -415,166 +415,166 @@ modelFit</code></pre>
 ## 
 ## Coefficients:
 ##       (Intercept)               make            address                all  
-##        -1.558e+00         -4.204e-01         -1.543e-01          2.567e-01  
+##        -1.417e+00         -3.575e-01         -1.427e-01          7.983e-02  
 ##             num3d                our               over             remove  
-##         2.835e+00          4.253e-01          1.413e+00          2.605e+00  
+##         1.747e+00          5.567e-01          5.033e-01          1.871e+00  
 ##          internet              order               mail            receive  
-##         5.449e-01          5.472e-01          3.055e-01         -2.435e-01  
+##         8.147e-01          1.243e+00          1.270e-01         -3.833e-02  
 ##              will             people             report          addresses  
-##        -1.793e-01         -6.995e-02          9.475e-02          8.812e-01  
+##        -1.583e-01         -1.722e-02          2.915e-02          1.275e+00  
 ##              free           business              email                you  
-##         1.267e+00          8.493e-01          6.363e-02          7.341e-02  
+##         1.215e+00          9.706e-01          5.749e-02          7.110e-02  
 ##            credit               your               font             num000  
-##         9.418e-01          2.244e-01          1.725e-01          1.764e+00  
+##         1.654e+00          2.009e-01          1.150e-01          1.547e+00  
 ##             money                 hp                hpl             george  
-##         3.439e-01         -1.921e+00         -6.729e-01         -1.128e+01  
+##         6.804e-01         -1.760e+00         -1.271e+00         -1.170e+01  
 ##            num650                lab               labs             telnet  
-##         4.344e-01         -2.731e+00         -4.399e-01         -3.269e-01  
+##         3.793e-01         -4.178e+00         -4.055e-01          4.273e-01  
 ##            num857               data             num415              num85  
-##         2.492e+00         -8.365e-01          1.479e+00         -1.702e+00  
+##         3.488e+00         -1.032e+00          5.977e-01         -2.342e+00  
 ##        technology            num1999              parts                 pm  
-##         7.018e-01          2.121e-01          1.294e+00         -9.802e-01  
+##         7.924e-01          1.870e-02         -7.537e-01         -9.356e-01  
 ##            direct                 cs            meeting           original  
-##         1.226e+00         -4.064e+01         -2.731e+00         -4.070e+00  
+##        -4.046e-01         -5.589e+02         -2.925e+00         -2.253e+00  
 ##           project                 re                edu              table  
-##        -1.515e+00         -8.551e-01         -1.780e+00         -3.133e+00  
+##        -1.295e+00         -8.149e-01         -2.149e+00         -2.214e+00  
 ##        conference      charSemicolon   charRoundbracket  charSquarebracket  
-##        -4.337e+00         -1.171e+00         -3.159e-01         -3.137e-01  
+##        -3.848e+00         -1.198e+00         -1.520e-01         -9.531e-01  
 ##   charExclamation         charDollar           charHash         capitalAve  
-##         2.439e-01          5.674e+00          2.159e+00         -1.548e-02  
+##         2.996e-01          4.734e+00          2.554e+00          1.689e-02  
 ##       capitalLong       capitalTotal  
-##         1.344e-02          7.362e-04  
+##         7.250e-03          1.197e-03  
 ## 
 ## Degrees of Freedom: 3450 Total (i.e. Null);  3393 Residual
 ## Null Deviance:       4628 
-## Residual Deviance: 1354  AIC: 1470</code></pre>
+## Residual Deviance: 1379  AIC: 1495</code></pre>
 <p>and also make predictions</p>
 <pre class="r"><code>predictions &lt;- predict(modelFit, newdata = testing)
 predictions</code></pre>
 <pre><code>##    [1] spam    spam    spam    spam    spam    spam    nonspam nonspam spam   
-##   [10] spam    spam    spam    nonspam spam    spam    spam    nonspam spam   
-##   [19] nonspam spam    spam    nonspam spam    spam    spam    nonspam spam   
-##   [28] spam    spam    spam    spam    spam    spam    spam    spam    spam   
-##   [37] nonspam spam    spam    spam    spam    spam    spam    spam    spam   
-##   [46] nonspam nonspam spam    spam    spam    spam    spam    spam    spam   
+##   [10] spam    nonspam spam    spam    spam    spam    spam    nonspam spam   
+##   [19] spam    spam    spam    spam    spam    spam    spam    spam    spam   
+##   [28] nonspam spam    spam    nonspam spam    spam    spam    spam    nonspam
+##   [37] spam    spam    spam    spam    spam    spam    spam    spam    spam   
+##   [46] spam    spam    spam    spam    spam    spam    spam    spam    spam   
 ##   [55] spam    spam    spam    spam    spam    spam    spam    spam    spam   
-##   [64] spam    spam    spam    spam    spam    spam    spam    spam    spam   
-##   [73] spam    nonspam spam    spam    spam    spam    spam    spam    spam   
-##   [82] spam    spam    spam    spam    nonspam spam    spam    spam    spam   
-##   [91] spam    spam    spam    nonspam spam    spam    spam    spam    spam   
+##   [64] spam    spam    spam    spam    spam    spam    spam    nonspam spam   
+##   [73] spam    spam    nonspam spam    spam    spam    spam    nonspam spam   
+##   [82] spam    spam    spam    spam    spam    spam    spam    spam    spam   
+##   [91] spam    spam    spam    spam    spam    spam    spam    spam    spam   
 ##  [100] spam    spam    spam    spam    spam    spam    spam    spam    spam   
-##  [109] spam    spam    nonspam spam    spam    spam    spam    spam    spam   
-##  [118] spam    spam    spam    spam    spam    spam    nonspam spam    spam   
+##  [109] nonspam spam    nonspam spam    spam    spam    spam    spam    spam   
+##  [118] spam    spam    spam    spam    spam    spam    spam    spam    nonspam
 ##  [127] spam    spam    spam    spam    spam    spam    spam    spam    spam   
-##  [136] nonspam spam    nonspam spam    spam    spam    spam    spam    nonspam
-##  [145] spam    nonspam spam    spam    spam    spam    spam    spam    spam   
-##  [154] spam    spam    spam    spam    spam    spam    spam    nonspam spam   
+##  [136] spam    spam    spam    spam    spam    spam    spam    spam    spam   
+##  [145] nonspam spam    spam    spam    spam    spam    spam    spam    spam   
+##  [154] spam    spam    spam    nonspam nonspam spam    spam    spam    spam   
 ##  [163] spam    spam    spam    spam    spam    spam    spam    spam    spam   
-##  [172] spam    spam    spam    spam    spam    spam    spam    spam    spam   
+##  [172] nonspam spam    spam    spam    spam    spam    spam    nonspam spam   
 ##  [181] spam    spam    spam    spam    spam    spam    spam    spam    spam   
-##  [190] nonspam spam    spam    spam    nonspam spam    spam    spam    spam   
-##  [199] spam    spam    spam    spam    spam    spam    spam    spam    spam   
-##  [208] spam    nonspam spam    nonspam spam    spam    spam    spam    spam   
-##  [217] spam    spam    spam    spam    spam    spam    spam    spam    spam   
-##  [226] spam    spam    spam    spam    spam    spam    spam    spam    spam   
-##  [235] spam    spam    nonspam nonspam spam    nonspam spam    spam    spam   
+##  [190] spam    spam    spam    spam    spam    spam    spam    spam    spam   
+##  [199] spam    spam    spam    spam    spam    spam    spam    nonspam spam   
+##  [208] spam    spam    spam    spam    spam    spam    spam    spam    spam   
+##  [217] nonspam spam    spam    spam    spam    spam    spam    spam    spam   
+##  [226] spam    spam    spam    spam    spam    spam    spam    nonspam spam   
+##  [235] spam    spam    spam    spam    spam    spam    spam    spam    spam   
 ##  [244] spam    spam    spam    spam    spam    spam    spam    spam    spam   
-##  [253] spam    spam    spam    nonspam spam    spam    spam    spam    spam   
+##  [253] spam    spam    spam    spam    spam    spam    spam    spam    spam   
 ##  [262] spam    spam    spam    spam    spam    spam    spam    spam    spam   
-##  [271] spam    spam    spam    spam    nonspam nonspam spam    spam    spam   
-##  [280] spam    spam    spam    spam    spam    spam    spam    spam    nonspam
+##  [271] spam    spam    spam    spam    spam    spam    spam    spam    spam   
+##  [280] nonspam spam    spam    spam    spam    spam    spam    spam    spam   
 ##  [289] spam    spam    spam    spam    spam    spam    spam    spam    spam   
-##  [298] spam    spam    spam    spam    spam    spam    spam    nonspam spam   
-##  [307] spam    spam    spam    spam    spam    spam    spam    spam    spam   
-##  [316] spam    nonspam spam    spam    spam    spam    spam    spam    spam   
-##  [325] spam    spam    spam    spam    spam    spam    spam    spam    spam   
+##  [298] spam    spam    spam    spam    spam    spam    spam    spam    spam   
+##  [307] spam    spam    spam    spam    spam    spam    spam    nonspam spam   
+##  [316] spam    spam    spam    spam    spam    spam    spam    spam    spam   
+##  [325] spam    nonspam spam    spam    spam    spam    spam    spam    spam   
 ##  [334] spam    spam    spam    spam    spam    spam    spam    spam    spam   
-##  [343] spam    spam    spam    spam    spam    spam    spam    nonspam spam   
-##  [352] spam    spam    spam    nonspam spam    spam    spam    nonspam spam   
+##  [343] spam    spam    nonspam spam    spam    spam    spam    spam    spam   
+##  [352] spam    spam    spam    spam    spam    nonspam spam    spam    spam   
 ##  [361] spam    spam    spam    spam    spam    spam    spam    spam    spam   
-##  [370] spam    nonspam spam    spam    spam    nonspam spam    spam    spam   
-##  [379] spam    spam    nonspam spam    nonspam spam    spam    spam    nonspam
-##  [388] spam    spam    nonspam nonspam spam    spam    spam    spam    spam   
-##  [397] spam    spam    spam    spam    nonspam nonspam spam    spam    spam   
-##  [406] nonspam spam    spam    spam    spam    spam    spam    nonspam spam   
-##  [415] nonspam spam    spam    spam    spam    nonspam spam    spam    nonspam
-##  [424] spam    spam    spam    spam    spam    spam    spam    spam    spam   
-##  [433] spam    spam    spam    spam    spam    spam    spam    spam    spam   
-##  [442] spam    spam    spam    spam    spam    spam    spam    nonspam spam   
-##  [451] spam    spam    spam    nonspam nonspam nonspam nonspam nonspam nonspam
-##  [460] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
+##  [370] spam    spam    spam    spam    spam    spam    nonspam nonspam nonspam
+##  [379] spam    spam    spam    spam    nonspam spam    nonspam spam    spam   
+##  [388] spam    spam    spam    spam    spam    spam    spam    spam    spam   
+##  [397] spam    spam    spam    spam    spam    spam    spam    spam    spam   
+##  [406] spam    spam    spam    spam    spam    spam    spam    nonspam spam   
+##  [415] nonspam nonspam spam    spam    spam    spam    nonspam spam    spam   
+##  [424] spam    spam    nonspam nonspam spam    spam    nonspam spam    spam   
+##  [433] nonspam spam    spam    spam    spam    spam    spam    spam    spam   
+##  [442] spam    spam    spam    spam    spam    spam    spam    spam    spam   
+##  [451] spam    nonspam spam    spam    nonspam nonspam nonspam nonspam nonspam
+##  [460] nonspam spam    nonspam nonspam nonspam nonspam nonspam nonspam nonspam
 ##  [469] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
-##  [478] nonspam nonspam nonspam spam    nonspam nonspam nonspam nonspam nonspam
+##  [478] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
 ##  [487] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
-##  [496] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam spam   
-##  [505] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
-##  [514] nonspam nonspam nonspam nonspam nonspam nonspam spam    nonspam nonspam
-##  [523] nonspam nonspam spam    nonspam nonspam nonspam nonspam nonspam nonspam
+##  [496] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
+##  [505] nonspam nonspam nonspam spam    nonspam nonspam nonspam nonspam nonspam
+##  [514] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
+##  [523] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
 ##  [532] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
-##  [541] spam    nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
+##  [541] nonspam nonspam nonspam nonspam nonspam nonspam nonspam spam    nonspam
 ##  [550] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
 ##  [559] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
 ##  [568] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
-##  [577] nonspam nonspam nonspam nonspam nonspam nonspam nonspam spam    nonspam
+##  [577] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
 ##  [586] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
-##  [595] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
+##  [595] nonspam nonspam nonspam nonspam nonspam nonspam spam    nonspam nonspam
 ##  [604] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
-##  [613] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
-##  [622] nonspam nonspam nonspam nonspam nonspam nonspam nonspam spam    nonspam
-##  [631] nonspam nonspam nonspam spam    nonspam nonspam nonspam nonspam nonspam
-##  [640] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
-##  [649] nonspam nonspam spam    nonspam nonspam nonspam nonspam nonspam nonspam
+##  [613] spam    nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
+##  [622] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
+##  [631] spam    nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
+##  [640] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam spam   
+##  [649] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
 ##  [658] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
 ##  [667] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
-##  [676] nonspam nonspam nonspam nonspam spam    nonspam nonspam nonspam nonspam
-##  [685] spam    nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
+##  [676] nonspam nonspam spam    nonspam nonspam nonspam nonspam nonspam nonspam
+##  [685] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
 ##  [694] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
-##  [703] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
+##  [703] nonspam nonspam nonspam nonspam nonspam spam    nonspam nonspam nonspam
 ##  [712] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
 ##  [721] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
-##  [730] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
-##  [739] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam spam   
-##  [748] nonspam nonspam nonspam nonspam nonspam spam    nonspam nonspam nonspam
+##  [730] nonspam spam    nonspam nonspam nonspam nonspam nonspam nonspam nonspam
+##  [739] nonspam spam    nonspam nonspam nonspam nonspam nonspam nonspam nonspam
+##  [748] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
 ##  [757] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
 ##  [766] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
 ##  [775] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
 ##  [784] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
 ##  [793] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
-##  [802] nonspam spam    nonspam nonspam nonspam nonspam nonspam nonspam nonspam
-##  [811] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
-##  [820] nonspam nonspam nonspam spam    nonspam nonspam nonspam nonspam nonspam
-##  [829] nonspam spam    nonspam nonspam nonspam nonspam nonspam nonspam nonspam
-##  [838] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam spam   
+##  [802] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
+##  [811] nonspam nonspam nonspam nonspam nonspam nonspam spam    nonspam spam   
+##  [820] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
+##  [829] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
+##  [838] nonspam nonspam spam    nonspam nonspam nonspam nonspam nonspam nonspam
 ##  [847] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
-##  [856] nonspam nonspam nonspam nonspam nonspam nonspam spam    nonspam nonspam
+##  [856] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
 ##  [865] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
 ##  [874] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
 ##  [883] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
 ##  [892] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
 ##  [901] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
 ##  [910] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
-##  [919] nonspam nonspam nonspam nonspam nonspam spam    nonspam nonspam nonspam
-##  [928] nonspam nonspam nonspam spam    nonspam nonspam nonspam nonspam nonspam
-##  [937] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
-##  [946] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
-##  [955] nonspam nonspam nonspam nonspam nonspam spam    nonspam nonspam nonspam
+##  [919] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
+##  [928] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
+##  [937] nonspam nonspam nonspam spam    nonspam nonspam nonspam spam    nonspam
+##  [946] nonspam nonspam nonspam nonspam nonspam nonspam nonspam spam    nonspam
+##  [955] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
 ##  [964] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
-##  [973] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
+##  [973] nonspam nonspam nonspam nonspam nonspam spam    nonspam nonspam nonspam
 ##  [982] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
 ##  [991] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
 ## [1000] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
-## [1009] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
-## [1018] nonspam nonspam spam    nonspam nonspam nonspam nonspam nonspam spam   
-## [1027] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
+## [1009] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam spam   
+## [1018] nonspam nonspam nonspam nonspam nonspam spam    nonspam nonspam nonspam
+## [1027] nonspam spam    nonspam nonspam nonspam nonspam nonspam nonspam nonspam
 ## [1036] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
-## [1045] nonspam nonspam nonspam nonspam spam    nonspam nonspam nonspam nonspam
-## [1054] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
-## [1063] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
-## [1072] spam    nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
-## [1081] nonspam nonspam nonspam nonspam nonspam nonspam nonspam spam    nonspam
-## [1090] nonspam nonspam nonspam nonspam nonspam spam    spam    nonspam nonspam
-## [1099] nonspam nonspam spam    nonspam nonspam spam    nonspam spam    spam   
-## [1108] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
+## [1045] nonspam nonspam nonspam spam    nonspam nonspam nonspam nonspam nonspam
+## [1054] nonspam nonspam spam    spam    spam    nonspam nonspam nonspam nonspam
+## [1063] nonspam nonspam nonspam nonspam nonspam nonspam spam    nonspam nonspam
+## [1072] nonspam nonspam nonspam nonspam spam    nonspam nonspam nonspam spam   
+## [1081] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
+## [1090] nonspam nonspam nonspam nonspam nonspam nonspam nonspam spam    spam   
+## [1099] spam    nonspam nonspam nonspam nonspam nonspam nonspam spam    nonspam
+## [1108] nonspam nonspam nonspam spam    spam    spam    spam    nonspam nonspam
 ## [1117] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
 ## [1126] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
 ## [1135] nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam nonspam
@@ -585,28 +585,28 @@ predictions</code></pre>
 ## 
 ##           Reference
 ## Prediction nonspam spam
-##    nonspam     665   51
-##    spam         32  402
-##                                           
-##                Accuracy : 0.9278          
-##                  95% CI : (0.9113, 0.9421)
-##     No Information Rate : 0.6061          
-##     P-Value [Acc &gt; NIR] : &lt; 2e-16         
-##                                           
-##                   Kappa : 0.8477          
-##                                           
-##  Mcnemar&#39;s Test P-Value : 0.04818         
-##                                           
-##             Sensitivity : 0.9541          
-##             Specificity : 0.8874          
-##          Pos Pred Value : 0.9288          
-##          Neg Pred Value : 0.9263          
-##              Prevalence : 0.6061          
-##          Detection Rate : 0.5783          
-##    Detection Prevalence : 0.6226          
-##       Balanced Accuracy : 0.9208          
-##                                           
-##        &#39;Positive&#39; Class : nonspam         
+##    nonspam     660   40
+##    spam         37  413
+##                                          
+##                Accuracy : 0.933          
+##                  95% CI : (0.917, 0.9468)
+##     No Information Rate : 0.6061         
+##     P-Value [Acc &gt; NIR] : &lt;2e-16         
+##                                          
+##                   Kappa : 0.8596         
+##                                          
+##  Mcnemar&#39;s Test P-Value : 0.8197         
+##                                          
+##             Sensitivity : 0.9469         
+##             Specificity : 0.9117         
+##          Pos Pred Value : 0.9429         
+##          Neg Pred Value : 0.9178         
+##              Prevalence : 0.6061         
+##          Detection Rate : 0.5739         
+##    Detection Prevalence : 0.6087         
+##       Balanced Accuracy : 0.9293         
+##                                          
+##        &#39;Positive&#39; Class : nonspam        
 ## </code></pre>
 </div>
 </div>

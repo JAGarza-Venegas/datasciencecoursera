@@ -1,0 +1,61 @@
+---
+title: "PracticalMachineLearning_CourseProject"
+author: "JAGV"
+date: "2026-06-30"
+output: html_document
+---
+
+# Context
+
+The goal of the project is to predict the manner in which people did exercise. This is the "classe" variable in the training set. In this report, I have to describe how I built the model, how I used cross-validation, what I thought the expected out of sample error were, and why I have made the choices I did. Also, I have to use the prediction model to predict 20 different test cases.
+
+# Collect the data
+
+```{r}
+training <- read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", sep=",",head=T, row.names = 1)
+dim(training)
+testing <- read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv", sep = ",", head = T, row.names = 1)
+# head(testing)
+```
+
+From here, we can see we have 159-1 = 158 variables to predict the last one: "class". Now, we reduce the set only for those variables without `NA`. This leaves me with 92 variables. Then, I removed all the variables starting with "skewness", "kurtosis", "timestamp", "max", "min" and "amplitude" as they have missing values. 
+
+```{r}
+library(dplyr)
+trainingS1 <- training[,cbind(lapply(lapply(training, is.na), sum)) == 0]
+#trainingS1
+subsettrain <- trainingS1 %>% select(-contains(c("skewness", "kurtosis", "timestamp", "max", "min", "amplitude")))
+#subsettrain
+library(corrplot)
+
+corrplot(cor(subsettrain[,-c(1,2,56)]))
+```
+Now, we can see that variables ending with "_x", "_y" or "_z" are highly correlated, so that in a regression model this might imply a multicollinearity problem. I decided to drop out those variables and leaving only 20 of them.
+
+```{r}
+subsettrain <- subsettrain %>% select(-contains(c("_x", "_y", "_z")))
+# subsettrain
+dim(subsettrain)
+```
+
+This is the data set I am going to use to build a model. Now, we will use cross-validation using the caret package, and choose one of the following methods that I remember from the lecture notes and videos: "glm", "lm" (not available since the classification is over 5 different types), "rf", "svm", "pca". I chose "rf" since is the one we explore the most in the course and it was used for the data set "iris" to classify the species given the other predictor variables. 
+
+```{r}
+library(caret)
+control <- trainControl(method = "cv")
+modfit <- train(classe ~., data = subsettrain, method = "rf", trControl = control)
+modfit
+```
+Accuracy is around $99\%$ but as was mentioned in the course, as we have 19622 samples, the time was consuming (around 15 minutes). After that, the fitted model was used to predict the `classe` for data in the testing set. Results are as follows:
+
+```{r}
+pred <- predict(modfit, testing)
+pred
+```
+
+\[
+    B A B A A E D B A A B C B A E E A B B B
+\]
+
+As there is no information of the true values, I can not compare the predicted values with the true values.
+
